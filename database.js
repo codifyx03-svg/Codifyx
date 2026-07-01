@@ -484,17 +484,18 @@ await run(`CREATE TABLE IF NOT EXISTS resumes (
     FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
 
-  // Seed Admin user with a known developer password for local testing.
+  // Seed Admin user — password is 'admin123'
   const adminEmail = 'koushishetty8109@gmail.com';
-  const adminPasswordHash = '$2a$10$vK9Z.lozkWGxV/qUgOGkWOfgsraWgKb5rUp3G/X.tWNl4xVr.XxDy';
+  const adminPassword = 'admin123';
+  const adminPasswordHash = bcrypt.hashSync(adminPassword, 10);
   const adminExists = await get('SELECT id, password_hash FROM users WHERE email = ?', [adminEmail]);
   if (!adminExists) {
     await run(`INSERT INTO users (role, email, password_hash, name, approved, verified) 
                VALUES ('admin', ?, ?, 'System Admin', 1, 1)`, [adminEmail, adminPasswordHash]);
     console.log('Seeded Admin account successfully.');
-  } else if (adminExists.password_hash !== adminPasswordHash) {
+  } else if (!bcrypt.compareSync(adminPassword, adminExists.password_hash)) {
     await run('UPDATE users SET password_hash = ? WHERE id = ?', [adminPasswordHash, adminExists.id]);
-    console.log('Updated existing Admin account password for local seed consistency.');
+    console.log('Updated existing Admin account password hash.');
   }
 
   // Seed Training Modules
