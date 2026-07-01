@@ -3,7 +3,7 @@
 // ==========================================
 
 // API_BASE can be set to your backend service URL (e.g., Cloud Run URL) if frontend and backend are on different domains.
-const API_BASE = ''; 
+const API_BASE = 'https://codify-backend-arv6.onrender.com'; 
 
 // JWT token helpers
 function getToken() {
