@@ -9,9 +9,10 @@ let sqliteDb = null;
 
 if (usePostgres) {
   console.log('🔌 Connecting to PostgreSQL Database...');
+  const isExternal = process.env.DATABASE_URL.includes('render.com');
   pgPool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: isExternal ? { rejectUnauthorized: false } : false
   });
 } else {
   console.log('📦 Using local SQLite Database...');
