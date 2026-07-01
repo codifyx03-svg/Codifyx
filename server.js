@@ -2937,7 +2937,9 @@ if (!isFirebase) {
       console.log(`📦 Database: ${process.env.DATABASE_PATH || './database.db'}\n`);
     });
   }).catch(err => {
-    console.error('Failed to initialize database:', err);
+    console.error('Failed to initialize database:', err.message);
+    console.error(err.stack);
+    process.exit(1);
   });
 } else {
   // Export as a Firebase Cloud Function
