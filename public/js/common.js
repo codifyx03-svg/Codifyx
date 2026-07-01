@@ -264,4 +264,41 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   const btn = document.getElementById('theme-toggle-btn');
   if (btn) btn.addEventListener('click', toggleTheme);
+
+  // Responsive Sidebar Toggle Injection
+  const header = document.querySelector('.dashboard-header');
+  const sidebar = document.querySelector('.sidebar');
+  if (header && sidebar) {
+    // 1. Insert hamburger button into header
+    header.insertAdjacentHTML('afterbegin', `
+      <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle Sidebar" style="margin-right: 1rem;">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    `);
+
+    // 2. Close sidebar on click of items on mobile
+    sidebar.addEventListener('click', (e) => {
+      if (e.target.closest('.sidebar-menu-item a') || e.target.closest('.logout-btn') || e.target.closest('.sidebar-brand')) {
+        sidebar.classList.remove('open');
+      }
+    });
+
+    // 3. Close sidebar when clicking outside of it
+    document.addEventListener('click', (e) => {
+      const toggleBtn = document.getElementById('sidebar-toggle');
+      if (sidebar.classList.contains('open') && 
+          !sidebar.contains(e.target) && 
+          !header.contains(e.target) && 
+          (toggleBtn && !toggleBtn.contains(e.target))) {
+        sidebar.classList.remove('open');
+      }
+    });
+  }
 });
+
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) {
+    sidebar.classList.toggle('open');
+  }
+}
