@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email - codifyx</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow-orb orb-1"></div>
+
+  <div class="auth-wrapper">
+    <div class="glass-card auth-card">
+      <div class="auth-header">
+        <a href="index.html" class="auth-logo">
+          <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:30px; height:30px; margin-right:0.5rem; vertical-align:middle;" />
+          codifyx
+        </a>
+        <h2 class="auth-title">Verify Your Email</h2>
+        <p class="auth-subtitle" id="verify-sub">Enter the code sent to your email address</p>
+      </div>
+
+      <form id="verify-form">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" required placeholder="name@company.com">
+        </div>
+        
+        <div class="form-group">
+          <label for="code">Verification Code</label>
+          <input type="text" id="code" required placeholder="123456" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5em" maxlength="6">
+        </div>
+
+        <button type="submit" class="btn btn-primary auth-btn">Verify Account</button>
+      </form>
+
+      <p class="auth-footer-text">
+        Didn't receive a code? <a href="login.html">Back to Login</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Autofill email from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email');
+    if (emailParam) {
+      document.getElementById('email').value = emailParam;
+      document.getElementById('verify-sub').innerText = `Enter the verification code sent to ${emailParam}`;
+    }
+
+    const form = document.getElementById('verify-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const code = document.getElementById('code').value;
+
+      try {
+        const response = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, code })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Verification failed');
+        }
+
+        showToast('Email verified successfully! You can now log in.', 'success');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1500);
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

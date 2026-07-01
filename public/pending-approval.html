@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pending Approval - codifyx</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow-orb orb-1"></div>
+
+  <div class="auth-wrapper" style="padding: 20px 10px">
+    <div class="glass-card auth-card" style="max-width: 600px; padding: 2.5rem; text-align: center;">
+      <div class="auth-header">
+        <a href="index.html" class="auth-logo">
+          <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:30px; height:30px"/>
+          codifyx
+        </a>
+        <h2 class="auth-title">Profile Under Review</h2>
+      </div>
+
+      <div style="padding: 2rem; background: #1e2a45; border-radius: 12px; border-left: 4px solid #f59e0b; margin: 2rem 0;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="margin: 0 auto 1rem; display: block;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <h3 style="color: #f59e0b; margin: 0 0 1rem 0;">Awaiting Admin Verification</h3>
+        <p style="color: #9ca3af; margin: 0 0 1.5rem 0;">
+          Your developer profile has been submitted successfully. Our admin team will review your qualifications, resume, and skills within 24-48 hours.
+        </p>
+        <p style="color: #6b7280; font-size: 0.9em;">
+          You will receive an email notification once your profile has been approved or if additional information is needed.
+        </p>
+      </div>
+
+      <div style="background: #0f1629; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; text-align: left;">
+        <h4 style="color: #f3f4f6; margin-top: 0;">What happens next?</h4>
+        <ul style="color: #9ca3af; line-height: 1.8; margin: 0; padding-left: 1.5rem;">
+          <li>Admin team reviews your profile (skills, resume, experience)</li>
+          <li>We verify your phone number and contact details</li>
+          <li>Upon approval, you'll gain full access to claim and work on tasks</li>
+          <li>You can earn money on every completed task</li>
+        </ul>
+      </div>
+
+      <button onclick="window.location.href='index.html'" class="btn btn-primary auth-btn" style="width: 100%; margin-bottom: 1rem;">
+        Back to Home
+      </button>
+
+      <p style="color: #6b7280; font-size: 0.85em;">
+        Questions? Contact us at <a href="mailto:support@codifyx.com" style="color: var(--color-primary);">support@codifyx.com</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Check if user is logged in
+    const user = getUser();
+    const token = getToken();
+    if (!user || !token || user.role !== 'worker') {
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>

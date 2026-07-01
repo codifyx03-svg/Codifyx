@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - codifyx</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow-orb orb-1"></div>
+
+  <div class="auth-wrapper" style="padding: 20px 10px">
+    <div class="glass-card auth-card" style="max-width: 600px; padding: 2.5rem">
+      <div class="auth-header">
+        <a href="index.html" class="auth-logo">
+          <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:30px; height:30px"/>
+          codifyx
+        </a>
+        <h2 class="auth-title">Create Account</h2>
+        <p class="auth-subtitle">Join codifyx to hire developers or start earning</p>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0; color: #6b7280; font-size: 0.9em;">Register with email and password</div>
+
+      <!-- Role Selector -->
+      <div class="role-selector">
+        <div class="role-tab active" id="tab-client" onclick="selectRole('client')">Client / Employer</div>
+        <div class="role-tab" id="tab-worker" onclick="selectRole('worker')">Worker / Developer</div>
+      </div>
+
+      <form id="register-form">
+        <!-- Hidden Role Field -->
+        <input type="hidden" id="role" name="role" value="client">
+
+        <!-- Universal Fields -->
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" required placeholder="John Doe">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" required placeholder="john@company.com">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required placeholder="••••••••" minlength="8">
+        </div>
+
+        <!-- Client Specific Fields -->
+        <div id="client-fields">
+          <div class="form-group">
+            <label for="company_name">Company Name</label>
+            <input type="text" id="company_name" name="company_name" placeholder="AgriTech Ltd">
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="text" id="phone" name="phone" placeholder="+91 99887 76655">
+          </div>
+        </div>
+
+        <!-- Worker Specific Fields -->
+        <div id="worker-fields" style="display:none"></div>
+
+        <button type="submit" class="btn btn-primary auth-btn" id="submit-btn">Register as Client</button>
+      </form>
+
+      <p class="auth-footer-text">
+        Already have an account? <a href="login.html">Log In</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    // URL role check
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialRole = urlParams.get('role');
+    if (initialRole === 'worker') {
+      selectRole('worker');
+    }
+
+    function selectRole(role) {
+      document.getElementById('role').value = role;
+      const tabClient = document.getElementById('tab-client');
+      const tabWorker = document.getElementById('tab-worker');
+      const clientFields = document.getElementById('client-fields');
+      const workerFields = document.getElementById('worker-fields');
+      const submitBtn = document.getElementById('submit-btn');
+
+      if (role === 'client') {
+        tabClient.classList.add('active');
+        tabWorker.classList.remove('active');
+        tabWorker.classList.remove('role-tab-worker');
+        clientFields.style.display = 'block';
+        workerFields.style.display = 'none';
+        submitBtn.innerText = 'Register as Client';
+        submitBtn.className = 'btn btn-primary auth-btn';
+      } else {
+        tabWorker.classList.add('active');
+        tabWorker.classList.add('role-tab-worker');
+        tabClient.classList.remove('active');
+        clientFields.style.display = 'none';
+        workerFields.style.display = 'block';
+        submitBtn.innerText = 'Register as Worker';
+        submitBtn.className = 'btn btn-secondary auth-btn';
+      }
+    }
+
+    // Resume name indicator
+    const resumeInput = document.getElementById('resume');
+    if (resumeInput) {
+      const resumeLabel = document.getElementById('resume-label');
+      resumeInput.addEventListener('change', () => {
+        if (resumeInput.files.length > 0) {
+          resumeLabel.querySelector('span').innerText = resumeInput.files[0].name;
+          resumeLabel.style.color = '#10b981';
+        }
+      });
+    }
+
+    // Form Submission
+    const form = document.getElementById('register-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const email = document.getElementById('email').value;
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Registration failed');
+        }
+
+        showToast(data.message, 'success');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1000);
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

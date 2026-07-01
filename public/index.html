@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="codifyx - Hire part-time skilled developers or join as a worker to build premium software faster and at lower cost.">
+  <title>codifyx - Build Software Faster & Lower Cost</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Background Glow Orbs -->
+  <div class="bg-glow-orb orb-1"></div>
+  <div class="bg-glow-orb orb-2"></div>
+
+  <!-- Header Navbar -->
+  <header>
+    <div class="container navbar-container">
+      <a href="index.html" class="logo-wrapper">
+        <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon"> codifyx
+      </a>
+      
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav>
+        <ul id="nav-links">
+          <li><a href="#home" class="active">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#contact">Contact</a></li>
+          <li><button class="auth-nav-btn" onclick="window.location.href='login.html'">Login</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" id="home">
+    <div class="container hero-content">
+      <span class="section-tag slide-up">The Future of Remote Dev Work</span>
+      <h1 class="hero-heading slide-up">Build software faster at lower cost.</h1>
+      <p class="hero-subheading slide-up">Hire part-time skilled developers and get software built faster.</p>
+      
+      <div class="btn-group slide-up">
+        <button class="btn btn-primary" onclick="window.location.href='register.html?role=client'">Hire Developers</button>
+        <button class="btn btn-secondary" onclick="window.location.href='register.html?role=worker'">Join as Worker</button>
+      </div>
+
+      <!-- Hero Mockup Dashboard Graphic -->
+      <div class="hero-mockup-wrapper slide-up">
+        <div style="background:#111625; padding: 20px; border-radius: 10px; text-align: left; font-family: monospace; font-size: 0.85rem; color: #a855f7; border: 1px solid rgba(255,255,255,0.05)">
+          <span style="color:#6366f1">// codifyx Auto-Splitting &amp; Allocation</span><br>
+          <span style="color:#9ca3af">const</span> project = <span style="color:#fff">"E-Commerce App"</span>;<br>
+          <span style="color:#9ca3af">const</span> tasks = AI.splitProject(project);<br>
+          <span style="color:#10b981">console</span>.log(tasks);<br>
+          <span style="color:#6b7280">/* Output:
+          - Task 1: Frontend Homepage [Assigned -> Amit S.] [Budget -> ₹25,000]
+          - Task 2: Authentication API [Assigned -> Priya R.] [Budget -> ₹15,000]
+          - Task 3: Database & Stripe Setup [Assigned -> Vikram K.] [Budget -> ₹20,000]
+          */</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="section-padding" id="about">
+    <div class="container">
+      <div class="section-header slide-up">
+        <span class="section-tag">Workflow</span>
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-description">codifyx bridges the gap between ambitious companies and high-performing developers using an optimized, AI-driven project workspace.</p>
+      </div>
+
+      <div class="grid-3">
+        <!-- Step 1 -->
+        <div class="glass-card slide-up">
+          <div class="step-number">01</div>
+          <div class="card-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+          </div>
+          <h3 class="card-title">1. Post a Project</h3>
+          <p class="card-text">Clients submit software requirements. Our localized AI analyzer immediately reviews, suggests an optimal tech stack, and estimates costs/timelines.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="glass-card slide-up">
+          <div class="step-number">02</div>
+          <div class="card-icon secondary">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14-1h-6m6 4h-4"/></svg>
+          </div>
+          <h3 class="card-title">2. AI-Driven Split & Matching</h3>
+          <p class="card-text">Admins review AI task splits, allocate micro-tasks to vetted part-time developers matching the exact technology requirements, and launch development.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="glass-card slide-up">
+          <div class="step-number">03</div>
+          <div class="card-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="card-title">3. Delivery & Safe Escrow</h3>
+          <p class="card-text">Developers upload deliverables. Admin reviews and approves submissions, automatically releasing earnings. Clients download verified, completed code.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits for Companies -->
+  <section class="section-padding" id="services">
+    <div class="container">
+      <div class="section-header slide-up">
+        <span class="section-tag">For Enterprise & Startups</span>
+        <h2 class="section-title">Benefits for Companies</h2>
+        <p class="section-description">Cut development overhead in half without sacrificing quality. Leverage our network of expert engineering talent.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card slide-up">
+          <div class="card-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="card-title">Massive Cost Savings</h3>
+          <p class="card-text">Pay only for active, completed milestones instead of heavy full-time salaries. Reduce development expenses by up to 50%.</p>
+        </div>
+
+        <div class="glass-card slide-up">
+          <div class="card-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <h3 class="card-title">Strict Quality & Verification</h3>
+          <p class="card-text">Every line of code goes through automatic filters and administrator review before you are charged. You get fully working results.</p>
+        </div>
+
+        <div class="glass-card slide-up">
+          <div class="card-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h3 class="card-title">Unmatched Speed</h3>
+          <p class="card-text">Parallel task assignment means multiple developers work on separate project modules simultaneously, shrinking lead times.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits for Workers -->
+  <section class="section-padding">
+    <div class="container">
+      <div class="section-header slide-up">
+        <span class="section-tag">For Developers</span>
+        <h2 class="section-title">Benefits for Workers</h2>
+        <p class="section-description">Earn supplemental income working on top-tier engineering assignments in your free hours.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card slide-up">
+          <div class="card-icon secondary">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="card-title">Flexible Schedule</h3>
+          <p class="card-text">Select only the micro-tasks that fit your stack and schedule. Work part-time, from anywhere, in your own time.</p>
+        </div>
+
+        <div class="glass-card slide-up">
+          <div class="card-icon secondary">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="card-title">Guaranteed & Fast Payouts</h3>
+          <p class="card-text">Once your task code is reviewed and approved by administrators, your earnings are released directly into your wallet balance.</p>
+        </div>
+
+        <div class="glass-card slide-up">
+          <div class="card-icon secondary">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          </div>
+          <h3 class="card-title">Free Upskilling & Training</h3>
+          <p class="card-text">Get access to custom learning modules on React, Node.js, AI workflows, and design, and earn credential badges.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="section-padding">
+    <div class="container">
+      <div class="section-header slide-up">
+        <span class="section-tag">Success Stories</span>
+        <h2 class="section-title">What Our Community Says</h2>
+        <p class="section-description">Read reviews from both our clients who built faster and our developers who earned on their terms.</p>
+      </div>
+
+      <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))">
+        <!-- Testimonial 1 -->
+        <div class="glass-card slide-up">
+          <div style="color:var(--status-pending); margin-bottom: 1rem">★★★★★</div>
+          <p class="card-text" style="font-style: italic; margin-bottom: 1.5rem">"codifyx changed the way we handle software development. We posted our E-Commerce requirement, the platform split it into tasks, and it was complete in 3 weeks at half the price of agencies."</p>
+          <div style="display:flex; align-items:center; gap: 0.75rem">
+            <div class="user-avatar" style="background:#8b5cf6">R</div>
+            <div>
+              <h4 style="font-size:0.9rem">Rajesh Malhotra</h4>
+              <p style="font-size:0.8rem; color:var(--text-muted)">CEO, AgriTech India</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 2 -->
+        <div class="glass-card slide-up">
+          <div style="color:var(--status-pending); margin-bottom: 1rem">★★★★★</div>
+          <p class="card-text" style="font-style: italic; margin-bottom: 1.5rem">"As a part-time Node.js developer, codifyx is perfect. I claim micro-tasks on weekends and receive my payments without chasing clients. The admin review loop is extremely fair."</p>
+          <div style="display:flex; align-items:center; gap: 0.75rem">
+            <div class="user-avatar" style="background:#10b981">A</div>
+            <div>
+              <h4 style="font-size:0.9rem">Ananya Sharma</h4>
+              <p style="font-size:0.8rem; color:var(--text-muted)">Senior Engineer, codifyx Worker</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 3 -->
+        <div class="glass-card slide-up">
+          <div style="color:var(--status-pending); margin-bottom: 1rem">★★★★★</div>
+          <p class="card-text" style="font-style: italic; margin-bottom: 1.5rem">"The AI estimation was incredibly accurate. Our dashboard app had complex metrics, and the task allocations worked like clockwork. Code quality was excellent."</p>
+          <div style="display:flex; align-items:center; gap: 0.75rem">
+            <div class="user-avatar" style="background:#3b82f6">S</div>
+            <div>
+              <h4 style="font-size:0.9rem">Sanjay Dutt</h4>
+              <p style="font-size:0.8rem; color:var(--text-muted)">VP Product, FinTech Labs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="section-padding">
+    <div class="container">
+      <div class="section-header slide-up">
+        <span class="section-tag">Got Questions?</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-description">Everything you need to know about codifyx's platform mechanics.</p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item slide-up">
+          <div class="faq-question">
+            <span>Is the code delivered to companies safe and tested?</span>
+            <svg class="faq-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div class="faq-answer">
+            <p>Yes. Every task completed by our freelance developers goes through a mandatory administrator code review. If the code fails checks or runs poorly, it is sent back to the developer with feedback. Payment is only released from client budgets after code approval.</p>
+          </div>
+        </div>
+
+        <div class="faq-item slide-up">
+          <div class="faq-question">
+            <span>How do developer payouts work?</span>
+            <svg class="faq-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div class="faq-answer">
+            <p>Once you complete an assigned task, you submit your code on the dashboard. The admin team reviews and approves the submission. Approved payments are instantly added to your wallet balance and available for withdrawal report.</p>
+          </div>
+        </div>
+
+        <div class="faq-item slide-up">
+          <div class="faq-question">
+            <span>What stack support does the AI analyzer offer?</span>
+            <svg class="faq-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div class="faq-answer">
+            <p>Our AI integration recognizes React, Node.js, Express, databases (SQLite/PostgreSQL), AI API integrations, Stripe gateways, WebSockets, mobile apps, and custom layout frameworks. It calculates timelines, splits them into logical developer modules, and sets fair rates.</p>
+          </div>
+        </div>
+
+        <div class="faq-item slide-up">
+          <div class="faq-question">
+            <span>Who can register as a developer?</span>
+            <svg class="faq-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div class="faq-answer">
+            <p>Any software engineer with solid skills can apply. Worker applications go through admin screening, and once approved, they can immediately claim open tasks. Developers can also complete training courses to unlock credentials.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact / Footer Area -->
+  <footer id="contact">
+    <div class="container footer-grid">
+      <div>
+        <div class="footer-logo">
+          <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:26px; height:26px"> codifyx
+        </div>
+        <p class="footer-desc">Empowering developers and streamlining software assembly through micro-tasks scheduling.</p>
+      </div>
+
+      <div>
+        <h4 class="footer-title">Platform</h4>
+        <ul class="footer-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#services">Services</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-title">Account</h4>
+        <ul class="footer-links">
+          <li><a href="login.html">Login</a></li>
+          <li><a href="register.html">Sign Up Client</a></li>
+          <li><a href="register.html?role=worker">Sign Up Worker</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-title">Support</h4>
+        <ul class="footer-links">
+          <li><a href="#contact">Contact Us</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Terms & Privacy</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-title">Newsletter</h4>
+        <p class="footer-desc">Stay updated on top task listings.</p>
+        <div class="newsletter-form">
+          <input type="email" class="newsletter-input" placeholder="Your Email">
+          <button class="newsletter-btn">Go</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="container footer-bottom">
+      <p>&copy; 2026 codifyx. All rights reserved.</p>
+      <p>Made with passion for part-time skilled developers.</p>
+    </div>
+  </footer>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Mobile navbar toggle
+    const toggle = document.getElementById('menu-toggle');
+    const links = document.getElementById('nav-links');
+
+    toggle.addEventListener('click', () => {
+      links.classList.toggle('active');
+    });
+
+    // FAQ Accordion Toggle
+    const faqItems = document.querySelectorAll('.faq-item');
+    faqItems.forEach(item => {
+      const question = item.querySelector('.faq-question');
+      question.addEventListener('click', () => {
+        const isActive = item.classList.contains('active');
+        // Close all first
+        faqItems.forEach(i => i.classList.remove('active'));
+        if (!isActive) {
+          item.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+.env
+database.db
+database.db-journal
+.git
+.github
+.gitignore
+.agents
+firebase.json
+.firebaserc
+AUTH_SETUP_GUIDE.md
