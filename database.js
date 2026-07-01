@@ -1,4 +1,3 @@
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
@@ -12,10 +11,11 @@ if (usePostgres) {
   console.log('🔌 Connecting to PostgreSQL Database...');
   pgPool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.PGSSL === 'true' || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: { rejectUnauthorized: false }
   });
 } else {
   console.log('📦 Using local SQLite Database...');
+  const sqlite3 = require('sqlite3').verbose();
   const dbPath = path.join(__dirname, 'database.db');
   sqliteDb = new sqlite3.Database(dbPath);
 }
