@@ -28,6 +28,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'devforce_secret_key_2026_super_sec
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DEBUG_OTP = process.env.DEBUG_OTP === 'true' || NODE_ENV !== 'production';
 
+// Trust proxy — required for rate-limiting and session cookies to work correctly
+// behind Render's load balancer (and any other reverse proxy)
+app.set('trust proxy', 1);
+
 if (DEBUG_OTP) {
   console.log('⚠️  DEBUG_OTP is enabled. OTP codes will be returned in API responses for development testing only.');
 }
