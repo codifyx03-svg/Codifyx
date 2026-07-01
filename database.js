@@ -279,6 +279,34 @@ await run(`CREATE TABLE IF NOT EXISTS resumes (
     await run('PRAGMA foreign_keys = ON');
   }
 
+  // Ensure groups table exists and has description column
+  await run(`CREATE TABLE IF NOT EXISTS groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    client_id INTEGER,
+    leader_id INTEGER,
+    project_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(leader_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+  )`);
+  await (async () => {
+    const groupCols = await query(`PRAGMA table_info(groups)`);
+    if (!groupCols.some(c => c.name === 'description')) {
+      try { await run(`ALTER TABLE groups ADD COLUMN description TEXT`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
+    }
+    if (!groupCols.some(c => c.name === 'project_id')) {
+      try { await run(`ALTER TABLE groups ADD COLUMN project_id INTEGER`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
+    }
+    if (!groupCols.some(c => c.name === 'company_lead_id')) {
+      try { await run(`ALTER TABLE groups ADD COLUMN company_lead_id INTEGER REFERENCES users(id) ON DELETE SET NULL`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
+    }
+    if (!groupCols.some(c => c.name === 'is_approved_lead')) {
+      try { await run(`ALTER TABLE groups ADD COLUMN is_approved_lead INTEGER DEFAULT 0`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
+    }
+  })();
+
   // Tasks Table
   await run(`CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -308,34 +336,6 @@ await run(`CREATE TABLE IF NOT EXISTS resumes (
     }
     if (!taskCols.some(c => c.name === 'completed_at')) {
       try { await run(`ALTER TABLE tasks ADD COLUMN completed_at DATETIME`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
-    }
-  })();
-
-  // Ensure groups table exists and has description column
-  await run(`CREATE TABLE IF NOT EXISTS groups (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    client_id INTEGER,
-    leader_id INTEGER,
-    project_id INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(client_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY(leader_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
-  )`);
-  await (async () => {
-    const groupCols = await query(`PRAGMA table_info(groups)`);
-    if (!groupCols.some(c => c.name === 'description')) {
-      try { await run(`ALTER TABLE groups ADD COLUMN description TEXT`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
-    }
-    if (!groupCols.some(c => c.name === 'project_id')) {
-      try { await run(`ALTER TABLE groups ADD COLUMN project_id INTEGER`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
-    }
-    if (!groupCols.some(c => c.name === 'company_lead_id')) {
-      try { await run(`ALTER TABLE groups ADD COLUMN company_lead_id INTEGER REFERENCES users(id) ON DELETE SET NULL`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
-    }
-    if (!groupCols.some(c => c.name === 'is_approved_lead')) {
-      try { await run(`ALTER TABLE groups ADD COLUMN is_approved_lead INTEGER DEFAULT 0`); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
     }
   })();
 
