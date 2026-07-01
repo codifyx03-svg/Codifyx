@@ -64,11 +64,32 @@ function redirectUserDashboard(role) {
   }
 }
 
-// Global fetch wrapper to handle invalid/expired auth tokens
+// Global fetch wrapper to handle invalid/expired auth tokens and route relative /api/ calls
 if (window.fetch) {
   const originalFetch = window.fetch.bind(window);
-  window.fetch = async (...args) => {
-    const response = await originalFetch(...args);
+  window.fetch = async (input, init) => {
+    let url;
+    if (typeof input === 'string') {
+      url = input;
+    } else if (input instanceof Request) {
+      url = input.url;
+    } else {
+      url = String(input);
+    }
+
+    // Intercept and route /api/ requests to the correct API_BASE domain
+    if (url.startsWith('/api/') && API_BASE) {
+      const newUrl = API_BASE + url;
+      if (typeof input === 'string') {
+        input = newUrl;
+      } else if (input instanceof Request) {
+        input = new Request(newUrl, input);
+      } else {
+        input = newUrl;
+      }
+    }
+
+    const response = await originalFetch(input, init);
     if (response.status === 401) {
       logout();
       showToast('Session expired or invalid token. Please log in again.', 'error');
