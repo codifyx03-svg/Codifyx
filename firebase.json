@@ -1,10 +1,51 @@
 {
-  "hosting": {
-    "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ]
-  }
+  "hosting": [
+    {
+      "target": "client",
+      "public": "client-web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ]
+    },
+    {
+      "target": "worker",
+      "public": "worker-web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/",
+          "destination": "/login.html"
+        },
+        {
+          "source": "/index.html",
+          "destination": "/login.html"
+        }
+      ]
+    },
+    {
+      "target": "admin",
+      "public": "admin-web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/",
+          "destination": "/portal-entry-secure-x97.html"
+        },
+        {
+          "source": "/index.html",
+          "destination": "/portal-entry-secure-x97.html"
+        }
+      ]
+    }
+  ]
 }

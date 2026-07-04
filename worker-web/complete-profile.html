@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Your Profile - codifyx</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow-orb orb-1"></div>
+
+  <div class="auth-wrapper" style="padding: 20px 10px">
+    <div class="glass-card auth-card" style="max-width: 700px; padding: 2.5rem">
+      <div class="auth-header">
+        <a href="index.html" class="auth-logo">
+          <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:30px; height:30px"/>
+          codifyx
+        </a>
+        <h2 class="auth-title">Complete Your Developer Profile</h2>
+        <p class="auth-subtitle">Provide your details for admin verification and approval</p>
+      </div>
+
+      <form id="profile-form">
+        <!-- Personal Details -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="first-name">First Name</label>
+            <input type="text" id="first-name" name="first_name" required placeholder="John">
+          </div>
+          <div class="form-group">
+            <label for="last-name">Last Name</label>
+            <input type="text" id="last-name" name="last_name" required placeholder="Doe">
+          </div>
+        </div>
+
+        <!-- Email (Read-only) -->
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" disabled style="opacity: 0.6; cursor: not-allowed;">
+        </div>
+
+        <!-- Phone Number -->
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" name="phone" required placeholder="+91 9988776655" style="width: 100%;">
+        </div>
+
+        <!-- Skills -->
+        <div class="form-group">
+          <label for="skills">Technical Skills (Comma-separated)</label>
+          <input type="text" id="skills" name="skills" required placeholder="React, Node.js, TypeScript, PostgreSQL, Docker">
+        </div>
+
+        <!-- Resume Upload -->
+        <div class="form-group">
+          <label>Upload Resume (PDF / DOC)</label>
+          <div class="file-upload-wrapper">
+            <input type="file" id="resume" name="resume" class="file-upload-input" accept=".pdf,.doc,.docx" required>
+            <div class="file-upload-label" id="resume-label">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+              <span>Choose file or drag here</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Experience -->
+        <div class="form-group">
+          <label for="experience">Professional Experience (Brief)</label>
+          <textarea id="experience" name="experience" rows="3" placeholder="Describe your software engineering experience..."></textarea>
+        </div>
+
+        <!-- Age and Hours -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="age">Age</label>
+            <input type="number" id="age" name="age" min="18" required placeholder="25">
+          </div>
+          <div class="form-group">
+            <label for="available-hours">Weekly Available Hours</label>
+            <input type="number" id="available-hours" name="available_hours" min="5" max="40" required placeholder="20">
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary auth-btn" id="submit-btn">Submit for Admin Approval</button>
+      </form>
+
+      <p class="auth-footer-text" style="margin-top: 2rem;">
+        <a href="index.html" style="color: var(--color-primary);">Back to Home</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Check if user is logged in
+    const user = getUser();
+    const token = getToken();
+    if (!user || !token) {
+      window.location.href = 'login.html';
+    }
+
+    // Populate email field
+    document.getElementById('email').value = user.email;
+
+    // Resume file upload handler
+    const resumeInput = document.getElementById('resume');
+    const resumeLabel = document.getElementById('resume-label');
+    resumeInput.addEventListener('change', () => {
+      if (resumeInput.files.length > 0) {
+        resumeLabel.querySelector('span').innerText = resumeInput.files[0].name;
+        resumeLabel.style.color = '#10b981';
+      }
+    });
+
+    // Form Submission
+    const form = document.getElementById('profile-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      
+      // Update first and last name fields
+      const firstName = document.getElementById('first-name').value;
+      const lastName = document.getElementById('last-name').value;
+      formData.set('first_name', firstName);
+      formData.set('last_name', lastName);
+
+      // Append phone number
+      const phone = document.getElementById('phone').value;
+      formData.set('phone', phone);
+
+      try {
+        const response = await fetch('/api/auth/worker/complete-profile', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Profile submission failed');
+        }
+
+        showToast(data.message, 'success');
+        setTimeout(() => {
+          window.location.href = 'pending-approval.html';
+        }, 1500);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

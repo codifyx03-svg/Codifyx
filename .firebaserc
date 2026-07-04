@@ -1,5 +1,20 @@
 {
   "projects": {
     "default": "codifyx-ea21d"
+  },
+  "targets": {
+    "codifyx-ea21d": {
+      "hosting": {
+        "client": [
+          "codifyx-ea21d"
+        ],
+        "worker": [
+          "codifyx-worker-ea21d"
+        ],
+        "admin": [
+          "codifyx-admin-ea21d"
+        ]
+      }
+    }
   }
 }

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Admin Access Portal</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 50%, #0c0f1a 0%, #05060b 100%);
+      font-family: 'Outfit', sans-serif;
+      overflow: hidden;
+    }
+    .auth-card {
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 20px 2px rgba(99, 102, 241, 0.1);
+    }
+    .btn-admin {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      color: #fff;
+      border: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+    .btn-admin:hover {
+      background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+    .badge-secure {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #34d399;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .step-hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow-orb orb-1" style="background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);"></div>
+
+  <div class="auth-wrapper">
+    <div class="glass-card auth-card">
+      <div class="auth-header">
+        <div style="text-align: center;">
+          <span class="badge-secure">🛡️ Encrypted Admin Gateway</span>
+        </div>
+        <h2 class="auth-title">Administrative Portal</h2>
+        <p class="auth-subtitle">Verify your credentials to manage codifyx systems</p>
+      </div>
+
+      <!-- Secure Login Form -->
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Admin Email Address</label>
+          <input type="email" id="email" required placeholder="admin@company.com" style="background: rgba(15, 23, 42, 0.6); color: #fff; border-color: rgba(99, 102, 241, 0.2);">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required placeholder="••••••••" style="background: rgba(15, 23, 42, 0.6); color: #fff; border-color: rgba(99, 102, 241, 0.2);">
+        </div>
+        <button type="submit" class="btn btn-admin auth-btn">Access Dashboard</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" style="position: fixed; bottom: 24px; right: 24px; z-index: 10000;"></div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    // Ensure admin token is removed when loading gateway
+    localStorage.removeItem('df_token');
+    localStorage.removeItem('df_user');
+
+    const loginForm = document.getElementById('login-form');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+
+    // Simple toast function since standard toast is in common.js but sometimes lacks container
+    function triggerLocalToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.style.background = type === 'success' ? '#10b981' : '#ef4444';
+      toast.style.color = '#fff';
+      toast.style.padding = '12px 24px';
+      toast.style.borderRadius = '8px';
+      toast.style.marginBottom = '10px';
+      toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+      toast.style.fontFamily = 'sans-serif';
+      toast.style.fontSize = '0.9rem';
+      toast.style.transition = 'opacity 0.5s ease';
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+      }, 3000);
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      const btn = loginForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+
+      try {
+        // Use relative path — runner.js proxies /api/* to admin-api:3004 on the same origin
+        const rawFetch = window._rawFetch || window.fetch;
+        const response = await rawFetch('/api/admin/auth/portal-secure-login-x97', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Authentication failed. Check your email and password.');
+        }
+
+        // Save token and user details
+        setToken(data.token);
+        setUser(data.admin);
+
+        triggerLocalToast('Access granted! Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = '/dashboard.html';
+        }, 1000);
+
+      } catch (err) {
+        triggerLocalToast(err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Access Dashboard';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - codifyx</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow-orb orb-1"></div>
+
+  <div class="auth-wrapper">
+    <div class="glass-card auth-card">
+      <div class="auth-header">
+        <a href="index.html" class="auth-logo">
+          <img src="uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:30px; height:30px"> codifyx
+        </a>
+        <h2 class="auth-title">Welcome Back</h2>
+        <p class="auth-subtitle">Log in to enter your workspace dashboard</p>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0 10px; color: #6b7280; font-size: 0.85em;">Log in with your email and password</div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" required placeholder="name@company.com">
+        </div>
+        <div class="form-group">
+          <label for="password" style="display:flex; justify-content:space-between">
+            Password
+            <a href="forgot-password.html" style="font-size:0.8rem; color:var(--color-primary)">Forgot?</a>
+          </label>
+          <input type="password" id="password" required placeholder="••••••••">
+        </div>
+
+        <button type="submit" class="btn btn-primary auth-btn">Log In</button>
+      </form>
+
+      <p class="auth-footer-text">
+        Don't have an account? <a href="register.html">Sign Up</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    // If user already logged in, redirect automatically
+    const existingUser = getUser();
+    if (existingUser && getToken()) {
+      redirectUserDashboard(existingUser.role);
+    }
+
+    // Password Login Form
+    const form = document.getElementById('login-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+
+        // Save token and user details
+        setToken(data.token);
+        setUser(data.user);
+
+        showToast('Login successful! Redirecting...', 'success');
+        setTimeout(() => {
+          if (data.redirectTo) {
+            window.location.href = data.redirectTo;
+          } else {
+            redirectUserDashboard(data.user.role);
+          }
+        }, 1000);
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html>
