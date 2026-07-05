@@ -80,10 +80,17 @@
 
         showToast('Login successful! Redirecting...', 'success');
         setTimeout(() => {
+          const isLocal = window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1');
           if (data.redirectTo) {
             let target = data.redirectTo;
             if (!target.endsWith('.html') && !target.startsWith('http://') && !target.startsWith('https://')) {
               target += '.html';
+            }
+            // Workers must be redirected to the worker portal domain
+            if (data.user && data.user.role === 'worker' && !target.startsWith('http')) {
+              target = isLocal
+                ? window.location.protocol + '//' + window.location.hostname + ':3000/worker/' + target
+                : 'https://codifyx-solutions-worker.web.app/' + target;
             }
             window.location.href = target;
           } else {
