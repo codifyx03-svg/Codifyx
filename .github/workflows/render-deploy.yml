@@ -1,0 +1,34 @@
+name: Render Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Render CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/render-oss/cli/refs/heads/main/bin/install.sh | sh
+          render --version
+
+      - name: Validate render.yaml
+        run: |
+          render blueprints validate ./render.yaml
+
+      - name: Trigger deploys (requires secrets)
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          PUBLIC_SERVICE_ID: ${{ secrets.RENDER_PUBLIC_SERVICE_ID }}
+          ADMIN_SERVICE_ID: ${{ secrets.RENDER_ADMIN_SERVICE_ID }}
+        run: |
+          if [ -z "$PUBLIC_SERVICE_ID" ] || [ -z "$ADMIN_SERVICE_ID" ]; then
+            echo "Service IDs not set — skipping deploy step. Set GitHub secrets RENDER_PUBLIC_SERVICE_ID and RENDER_ADMIN_SERVICE_ID to trigger deploys."
+            exit 0
+          fi
+          render deploys create "$PUBLIC_SERVICE_ID" --output json --confirm
+          render deploys create "$ADMIN_SERVICE_ID" --output json --confirm

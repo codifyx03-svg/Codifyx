@@ -67,4 +67,21 @@ Files added or updated:
 - `apps/admin-api/server.js` — Render-compatible `PORT` fallback
 - `package.json` — dependency cleanup for root package
 
+CI: GitHub Actions
+
+You can automate validation and deploy triggers using GitHub Actions. A sample workflow is added at `.github/workflows/render-deploy.yml`.
+
+Required repository secrets for automatic deploys:
+- `RENDER_API_KEY` — your Render API key (create in Render dashboard -> Account -> API keys)
+- `RENDER_PUBLIC_SERVICE_ID` — Render service ID for `codifyx-public-api` (created via Render dashboard)
+- `RENDER_ADMIN_SERVICE_ID` — Render service ID for `codifyx-admin-api`
+
+Behavior of the workflow:
+- Validates `render.yaml` using the Render CLI (`render blueprints validate`).
+- If the two service ID secrets are present, triggers `render deploys create <SERVICE_ID>` for each service.
+
+Notes:
+- If you haven't connected this repository in the Render dashboard yet, visit Render, connect your GitHub repo, and let Render auto-detect `render.yaml` to create the services. After services exist, copy their service IDs into GitHub secrets to enable full CI deploys.
+- You can also install the Render CLI locally and run `render login` to manage services interactively.
+
 Use this setup to deploy CodifyX in a free testing environment before moving to production.
