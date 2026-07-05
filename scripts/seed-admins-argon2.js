@@ -1,6 +1,6 @@
 require('dotenv').config();
-const db = require('../shared/database');
-const { hashPassword } = require('../shared/database');
+const db = require('../shared/database/database');
+const { hashPassword } = require('../shared/database/database');
 
 async function seed() {
   await db.initDb();

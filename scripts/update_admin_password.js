@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const db = require('../database');
+const db = require('../shared/database/database');
 
 const email = process.env.NEW_ADMIN_EMAIL;
 const pass = process.env.NEW_ADMIN_PASS;

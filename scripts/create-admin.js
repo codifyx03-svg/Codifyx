@@ -13,7 +13,7 @@
 'use strict';
 require('dotenv').config();
 const readline = require('readline');
-const database = require('../shared/database');
+const database = require('../shared/database/database');
 
 let argon2;
 let bcrypt;
@@ -142,7 +142,7 @@ async function main() {
   console.log(`   Name  : ${name}`);
   console.log(`   Role  : ${role}`);
   console.log(`   Hash  : ${argon2 ? 'Argon2id' : 'bcrypt'}`);
-  console.log(`\n🔐 Login at: http://localhost:3002/portal-entry-secure-x97.html\n`);
+  console.log(`\n🔐 Login at: http://localhost:${process.env.FRONTEND_PORT || 3000}/admin\n`);
   process.exit(0);
 }
 

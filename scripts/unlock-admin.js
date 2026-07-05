@@ -33,7 +33,7 @@ db.serialize(() => {
           console.error('⚠️  No admin account found with that email.');
         } else {
           console.log('✅ Account unlocked successfully!\n');
-          console.log('🔐 Login at: http://localhost:3002/portal-entry-secure-x97.html');
+          console.log(`🔐 Login at: http://localhost:${process.env.FRONTEND_PORT || 3000}/admin`);
           console.log(`   Email:    ${targetEmail}`);
           console.log('   Password: (use the password from your .env file)\n');
         }
@@ -55,7 +55,7 @@ db.serialize(() => {
               console.log('📋 Admin accounts:');
               console.table(rows);
             }
-            console.log('🔐 Login at: http://localhost:3002/portal-entry-secure-x97.html\n');
+            console.log(`🔐 Login at: http://localhost:${process.env.FRONTEND_PORT || 3000}/admin\n`);
             db.close();
           });
         }

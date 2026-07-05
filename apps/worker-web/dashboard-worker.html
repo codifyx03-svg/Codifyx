@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Worker Dashboard - codifyx</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow-orb orb-1"></div>
+  <div class="bg-glow-orb orb-2"></div>
+
+  <div class="dashboard-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="sidebar-brand">
+          <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:26px; height:26px; margin-right:0.5rem; vertical-align:middle;" />
+          <span>codifyx</span>
+        </a>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="sidebar-menu-item active" data-view="dashboard">
+          <a href="#"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg> <span>Dashboard</span></a>
+        </li>
+        <li class="sidebar-menu-item" data-view="available-tasks">
+          <a href="#"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg> <span>Available Tasks</span></a>
+        </li>
+        <li class="sidebar-menu-item" data-view="assigned-tasks">
+          <a href="#"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg> <span>Assigned Tasks</span></a>
+        </li>
+        <li class="sidebar-menu-item" data-view="earnings">
+          <a href="#"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> <span>Earnings</span></a>
+        </li>
+        <li class="sidebar-menu-item" data-view="performance">
+          <a href="#"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg> <span>Performance</span></a>
+        </li>
+        <li class="sidebar-menu-item" data-view="legal-history">
+          <a href="#"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4.75c-4.28 0-7.75 3.47-7.75 7.75s3.47 7.75 7.75 7.75 7.75-3.47 7.75-7.75S16.28 4.75 12 4.75zm0 1.5a6.25 6.25 0 016.25 6.25A6.25 6.25 0 0112 18.75 6.25 6.25 0 015.75 12 6.25 6.25 0 0112 6.25zm-.75 3h1.5v4.5h-1.5V9.25zm0 6.5h1.5v1.5h-1.5v-1.5z"/></svg> <span>Legal History</span></a>
+        </li>
+        <li class="sidebar-menu-item" data-view="training">
+          <a href="#"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg> <span>Training</span></a>
+        </li>
+        <li class="sidebar-menu-item" data-view="chat-support">
+          <a href="#" style="display:flex; justify-content:space-between">
+            <span style="display:flex; align-items:center; gap:0.75rem">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+              <span>Chat Admin</span>
+            </span>
+            <span class="unread-pill" id="chat-unread-badge" style="display:none">0</span>
+          </a>
+        </li>
+        <li class="sidebar-menu-item" data-view="settings">
+          <a href="#"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg> <span>Settings</span></a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-badge">
+          <div class="user-avatar" id="worker-avatar" style="background:var(--grad-secondary)">W</div>
+          <div class="user-info">
+            <div class="user-name" id="worker-name-label">Worker Dev</div>
+            <div class="user-role">Developer</div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="logout()" title="Logout">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="dashboard-main">
+      <div class="dashboard-header">
+        <div class="dashboard-title-wrap">
+          <h1 id="view-title">Developer Dashboard</h1>
+          <p id="view-subtitle">Monitor available tasks, perform updates, and upskill</p>
+        </div>
+      </div>
+
+      <!-- 1. DASHBOARD OVERVIEW VIEW -->
+      <section id="view-dashboard" class="dashboard-view active">
+        <div class="stats-grid">
+          <div class="glass-card stat-card" style="border-left:4px solid var(--color-secondary)">
+            <div class="stat-header">Total Wallet Earnings <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2"/></svg></div>
+            <div class="stat-value" id="stats-total-earnings">₹0</div>
+            <div class="stat-desc">Approved funds released to you</div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-header">Pending In Review <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+            <div class="stat-value" id="stats-pending-payments">₹0</div>
+            <div class="stat-desc">Awaiting Admin code check-off</div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-header">Completed Tasks <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+            <div class="stat-value" id="stats-completed-tasks">0</div>
+            <div class="stat-desc">Approved code deliverables</div>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom: 1rem">Active Engineering Board</h3>
+        <div class="grid-3" id="dashboard-assigned-tasks-grid">
+          <!-- Claims grid -->
+        </div>
+      </section>
+
+      <!-- 2. AVAILABLE TASKS VIEW -->
+      <section id="view-available-tasks" class="dashboard-view">
+        <!-- Main Board Panel -->
+        <div id="available-tasks-board-panel">
+          <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <button class="btn btn-secondary active" id="btn-show-small-tasks" onclick="switchAvailableTasksTab('small')" style="width: auto; padding: 0.5rem 1.5rem; background: var(--grad-primary); border-color: transparent; color: #fff;">Small Projects</button>
+            <button class="btn btn-secondary" id="btn-show-big-projects" onclick="switchAvailableTasksTab('big')" style="width: auto; padding: 0.5rem 1.5rem;">Big Projects (Team)</button>
+          </div>
+          
+          <div class="grid-3" id="available-small-tasks-container">
+            <!-- Available small tasks inject -->
+          </div>
+          <div class="grid-3" id="available-big-projects-container" style="display: none;">
+            <!-- Available big projects inject -->
+          </div>
+        </div>
+
+        <!-- Project Details Separate Panel (Details View) -->
+        <div id="available-project-details-panel" style="display: none;">
+          <button class="btn btn-secondary" onclick="backToAvailableTasksBoard()" style="margin-bottom: 1.5rem; width: auto;">&larr; Back to Listings</button>
+          <div id="available-project-details-content">
+            <!-- Full details injected here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. ASSIGNED TASKS VIEW -->
+      <section id="view-assigned-tasks" class="dashboard-view">
+        <!-- Main Board Panel -->
+        <div id="worker-assigned-board-panel">
+          <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--color-primary);">My Milestone Tasks</h3>
+          <div class="grid-3" id="assigned-tasks-container" style="margin-bottom: 3rem;">
+            <!-- Active worker claims inject -->
+          </div>
+
+          <h3 style="margin-bottom: 1rem; color: #a855f7;">My Team Workspaces</h3>
+          <div class="grid-3" id="assigned-groups-container">
+            <!-- Active worker groups inject -->
+          </div>
+        </div>
+
+        <!-- Team Group Workspace Detailed Panel -->
+        <div id="worker-group-workspace-panel" style="display: none;">
+          <button class="btn btn-secondary" onclick="backToAssignedBoard()" style="margin-bottom: 1.5rem; width: auto;">&larr; Back to Workspaces</button>
+          <div id="worker-group-workspace-content">
+            <!-- Injected workspace details -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. LEGAL HISTORY VIEW -->
+      <section id="view-legal-history" class="dashboard-view">
+        <div class="glass-card" style="padding:2.5rem; margin-bottom:1.5rem;">
+          <h3>Legal Acceptance History</h3>
+          <p style="color:var(--text-secondary); margin-top:0.5rem;">Review all agreements you accepted, including accepted versions, timestamps, and the current active agreements.</p>
+          <div class="stats-grid" style="margin-top:1.5rem;">
+            <div class="glass-card stat-card">
+              <div class="stat-header">Most Recent Acceptance</div>
+              <div class="stat-value" id="legal-history-latest">Loading…</div>
+              <div class="stat-desc">Last agreement you accepted</div>
+            </div>
+            <div class="glass-card stat-card">
+              <div class="stat-header">Current Active Agreements</div>
+              <div class="stat-value" id="legal-history-current-version">Loading…</div>
+              <div class="stat-desc">Latest active versions available</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrapper" style="margin-bottom:1.5rem;">
+          <h4>Acceptance History</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Version</th>
+                <th>Accepted At</th>
+                <th>IP Address</th>
+                <th>User Agent</th>
+              </tr>
+            </thead>
+            <tbody id="legal-history-table-body">
+              <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Loading acceptance history...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="glass-card" style="padding:2.5rem;">
+          <h4>Current Active Agreements</h4>
+          <div id="legal-current-documents" style="display:grid; gap:1rem; margin-top:1rem;">
+            <p style="color:var(--text-muted);">Loading active legal documents...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. EARNINGS VIEW -->
+      <section id="view-earnings" class="dashboard-view">
+        <div class="stats-grid">
+          <div class="glass-card stat-card" style="border-left: 4px solid var(--color-secondary)">
+            <div class="stat-header">Wallet Balance (Available)</div>
+            <div class="stat-value" id="wallet-balance-val">₹0</div>
+            <div class="stat-desc">Funds ready to be withdrawn</div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-header">Approved Earnings</div>
+            <div class="stat-value" id="earnings-approved-val">₹0</div>
+            <div class="stat-desc">Total cumulative task earnings</div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-header">Held Escrow Payouts</div>
+            <div class="stat-value" id="earnings-pending-val">₹0</div>
+            <div class="stat-desc">Awaiting task completion/admin check</div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-top:2rem; margin-bottom:2rem; align-items:start;">
+          <!-- Request Withdrawal Form -->
+          <div class="glass-card" style="padding:1.5rem;">
+            <h3 style="margin-bottom:1rem; color:#fff;">🏧 Request Payout / Withdrawal</h3>
+            <form id="withdraw-form">
+              <div class="form-group" style="margin-bottom:1rem">
+                <label for="withdraw-amount">Amount (₹)</label>
+                <input type="number" id="withdraw-amount" required min="1" placeholder="Enter amount to withdraw..." style="width:100%; padding:0.5rem; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; border-radius:4px;">
+              </div>
+              <div class="form-group" style="margin-bottom:1rem">
+                <label for="payout-method">Payout Method</label>
+                <select id="payout-method" onchange="togglePayoutFields()" style="width:100%; padding:0.5rem; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; border-radius:4px;">
+                  <option value="upi">UPI ID</option>
+                  <option value="bank">Bank Transfer</option>
+                </select>
+              </div>
+
+              <!-- UPI Fields -->
+              <div id="upi-fields" class="form-group" style="margin-bottom:1rem">
+                <label for="withdraw-upi">UPI ID</label>
+                <input type="text" id="withdraw-upi" placeholder="username@upi" style="width:100%; padding:0.5rem; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; border-radius:4px;">
+              </div>
+
+              <!-- Bank Fields -->
+              <div id="bank-fields" style="display:none;">
+                <div class="form-group" style="margin-bottom:1rem">
+                  <label for="withdraw-bank-account">Account Number</label>
+                  <input type="text" id="withdraw-bank-account" placeholder="Account Number" style="width:100%; padding:0.5rem; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; border-radius:4px;">
+                </div>
+                <div class="form-group" style="margin-bottom:1rem">
+                  <label for="withdraw-bank-ifsc">IFSC Code</label>
+                  <input type="text" id="withdraw-bank-ifsc" placeholder="IFSC Code" style="width:100%; padding:0.5rem; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; border-radius:4px;">
+                </div>
+                <div class="form-group" style="margin-bottom:1rem">
+                  <label for="withdraw-bank-name">Account Holder Name</label>
+                  <input type="text" id="withdraw-bank-name" placeholder="Beneficiary Name" style="width:100%; padding:0.5rem; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; border-radius:4px;">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">Submit Withdrawal Request</button>
+            </form>
+          </div>
+
+          <!-- Withdrawal History List -->
+          <div class="glass-card" style="padding:1.5rem; height:100%; display:flex; flex-direction:column;">
+            <h3 style="margin-bottom:1rem; color:#fff;">📜 Withdrawal Requests History</h3>
+            <div class="table-wrapper" style="flex-grow:1; max-height:280px; overflow-y:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Amount</th>
+                    <th>Requested On</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="withdrawals-table-body">
+                  <tr><td colspan="3" style="text-align:center; color:var(--text-muted)">No withdrawals requested yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom: 1rem">Transaction Ledger (Payouts to Wallet)</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Project Reference</th>
+                <th>Task Title</th>
+                <th>Payment Amount</th>
+                <th>Payout Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="earnings-table-body">
+              <!-- Payout logs -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 5. PERFORMANCE VIEW -->
+      <section id="view-performance" class="dashboard-view">
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))">
+          <div class="glass-card stat-card" style="text-align: center">
+            <div class="stat-header" style="justify-content:center">Quality Rating Score</div>
+            <div class="stat-value" id="perf-rating" style="color:var(--status-pending)">4.5</div>
+            <div class="stat-desc">Average code reviews review rating</div>
+          </div>
+          <div class="glass-card stat-card" style="text-align: center">
+            <div class="stat-header" style="justify-content:center">Deliverables Accuracy</div>
+            <div class="stat-value" id="perf-accuracy" style="color:var(--color-secondary)">94%</div>
+            <div class="stat-desc">Accepted tasks on first attempt</div>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom: 1rem">Your Credentials & Badges</h3>
+        <div class="badge-gallery" id="badges-container">
+          <div class="badge-item" id="badge-React">
+            <svg class="badge-icon" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4l6.5 13h-13L12 6zm-2 7h4v2h-4v-2z" fill="#6366f1"/></svg>
+            <div class="badge-name">React Expert</div>
+          </div>
+          <div class="badge-item" id="badge-Node_js">
+            <svg class="badge-icon" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4l6.5 13h-13L12 6zm-2 7h4v2h-4v-2z" fill="#10b981"/></svg>
+            <div class="badge-name">Node.js API</div>
+          </div>
+          <div class="badge-item" id="badge-AI_coding_tools">
+            <svg class="badge-icon" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4l6.5 13h-13L12 6zm-2 7h4v2h-4v-2z" fill="#a855f7"/></svg>
+            <div class="badge-name">AI Copilot</div>
+          </div>
+          <div class="badge-item" id="badge-GitHub_workflow">
+            <svg class="badge-icon" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4l6.5 13h-13L12 6zm-2 7h4v2h-4v-2z" fill="#3b82f6"/></svg>
+            <div class="badge-name">Git Flow</div>
+          </div>
+          <div class="badge-item" id="badge-UI_design">
+            <svg class="badge-icon" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4l6.5 13h-13L12 6zm-2 7h4v2h-4v-2z" fill="#f59e0b"/></svg>
+            <div class="badge-name">UX Design</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. TRAINING VIEW -->
+      <section id="view-training" class="dashboard-view">
+        <!-- Main course list page -->
+        <div id="training-list-panel">
+          <div class="grid-3" id="training-modules-grid">
+            <!-- Loaded from backend -->
+          </div>
+        </div>
+
+        <!-- Video Player & Quiz Portal (hidden initially) -->
+        <div id="training-player-panel" style="display:none">
+          <button class="btn btn-secondary" onclick="backToTrainingList()" style="margin-bottom:1.5rem">&larr; Back to Modules</button>
+          
+          <div class="training-split-layout">
+            <div>
+              <div class="video-responsive-wrapper">
+                <iframe id="training-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+              </div>
+              <h2 id="training-video-title">Module Title</h2>
+              <p id="training-video-desc" style="color:var(--text-secondary); margin-top:1rem; line-height:1.6">Description...</p>
+            </div>
+            
+            <div class="quiz-container">
+              <h3 style="margin-bottom:1.5rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem">Topic Quiz</h3>
+              <form id="training-quiz-form">
+                <input type="hidden" id="quiz-module-id">
+                <div id="quiz-questions-wrap">
+                  <!-- Quiz questions inject -->
+                </div>
+                <button type="submit" class="btn btn-primary auth-btn">Submit Answers</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. CHAT SUPPORT VIEW -->
+      <section id="view-chat-support" class="dashboard-view">
+        <div class="chat-layout">
+          <!-- Left contacts list -->
+          <div class="chat-contacts-panel">
+            <div class="chat-panel-header">Platform Operations</div>
+            <ul class="chat-contacts-list" id="chat-contacts-ul">
+              <!-- Contacts -->
+            </ul>
+          </div>
+          <!-- Right chat window -->
+          <div class="chat-window" id="chat-window-box">
+            <div class="chat-no-conversation">
+              <svg class="chat-no-conversation-icon" viewBox="0 0 24 24">
+                <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+              </svg>
+              <p>Select an administrator contact to chat in real time.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. SETTINGS VIEW -->
+      <section id="view-settings" class="dashboard-view">
+        <div style="max-width: 600px">
+          <form id="settings-profile-form" class="glass-card" style="padding: 2.5rem; margin-bottom: 2rem">
+            <h3 style="margin-bottom: 1.5rem">Professional Details</h3>
+            <div class="form-group">
+              <label for="profile-name">Full Name</label>
+              <input type="text" id="profile-name" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="profile-age">Age</label>
+                <input type="number" id="profile-age" required>
+              </div>
+              <div class="form-group">
+                <label for="profile-hours">Weekly Available Hours</label>
+                <input type="number" id="profile-hours" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="profile-skills">Skills (Comma-separated)</label>
+              <input type="text" id="profile-skills" required>
+            </div>
+            <div class="form-group">
+              <label for="profile-experience">Experience Description</label>
+              <textarea id="profile-experience" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </form>
+
+          <form id="settings-password-form" class="glass-card" style="padding: 2.5rem">
+            <h3 style="margin-bottom: 1.5rem">Change Password</h3>
+            <div class="form-group">
+              <label for="old-pass">Current Password</label>
+              <input type="password" id="old-pass" required placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label for="new-pass">New Password</label>
+              <input type="password" id="new-pass" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-secondary">Update Password</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Worker Submission Modal -->
+  <div class="modal-overlay" id="task-submit-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="submit-modal-title">Submit Deliverable</h3>
+        <button class="modal-close" onclick="closeSubmitModal()">&times;</button>
+      </div>
+      <form id="task-submit-form" style="font-size:0.95rem">
+        <input type="hidden" id="submit-task-id">
+        <div class="form-group" style="margin-bottom:1.5rem">
+          <label for="submit-code">Paste Code Submission or GitHub URL</label>
+          <textarea id="submit-code" rows="7" required placeholder="Paste completed code here or provide repository files URL..."></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:1.5rem">
+          <label for="submit-progress" style="display:flex; justify-content:space-between">
+            <span>Overall Task Progress</span>
+            <span id="progress-val-indicator">100%</span>
+          </label>
+          <input type="range" id="submit-progress" min="10" max="100" value="100" style="width:100%" oninput="document.getElementById('progress-val-indicator').innerText = this.value + '%'">
+        </div>
+        <button type="submit" class="btn btn-secondary auth-btn">Deliver Code</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Worker Request Help Modal -->
+  <div class="modal-overlay" id="task-help-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Request Administrative Assistance</h3>
+        <button class="modal-close" onclick="closeHelpModal()">&times;</button>
+      </div>
+      <form id="task-help-form">
+        <input type="hidden" id="help-task-id">
+        <div class="form-group" style="margin-bottom:1.5rem">
+          <label for="help-message">What issue are you facing with this task?</label>
+          <textarea id="help-message" rows="5" required placeholder="Describe the blockers, API issues, or specs mismatch..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary auth-btn">Dispatch Assistance Ticket</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.2.0/docx.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/worker.js"></script>
+</body>
+</html>

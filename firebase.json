@@ -1,8 +1,8 @@
 {
   "hosting": [
     {
-      "target": "client",
-      "public": "client-web",
+      "site": "codifyx-solutions",
+      "public": "apps/client-web",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -10,8 +10,8 @@
       ]
     },
     {
-      "target": "worker",
-      "public": "worker-web",
+      "site": "codifyx-solutions-worker",
+      "public": "apps/worker-web",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -29,8 +29,8 @@
       ]
     },
     {
-      "target": "admin",
-      "public": "admin-web",
+      "site": "codifyx-solutions-admin",
+      "public": "apps/admin-web",
       "ignore": [
         "firebase.json",
         "**/.*",

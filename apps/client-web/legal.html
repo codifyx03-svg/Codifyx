@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal - Codify</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow-orb orb-1"></div>
+  <div class="auth-wrapper" style="padding: 20px 10px">
+    <div class="glass-card auth-card" style="max-width: 720px; padding: 2.5rem;">
+      <div class="auth-header">
+        <a href="index.html" class="auth-logo">
+          <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:30px; height:30px"/>
+          codifyx
+        </a>
+        <h2 class="auth-title">Terms & Privacy</h2>
+        <p class="auth-subtitle">Review the latest Terms of Service and Privacy Policy before continuing.</p>
+      </div>
+
+      <div id="legal-content" style="margin-top:1.5rem; color:#d1d5db; line-height:1.8;">
+        <p>Loading legal content...</p>
+      </div>
+
+      <div style="margin-top:1.5rem; display:flex; align-items:flex-start; gap:1rem;">
+        <label style="display:flex; align-items:center; gap:0.75rem; font-size:0.95rem;">
+          <input type="checkbox" id="legal-acceptance" />
+          <span>I have read and agree to the active legal documents.</span>
+        </label>
+      </div>
+
+      <button id="accept-btn" class="btn btn-primary auth-btn" style="margin-top:1.25rem;" disabled>Accept and Continue</button>
+      <p id="legal-note" style="margin-top:1rem; font-size:0.9rem; color:#9ca3af;">You must accept these documents to proceed to your dashboard.</p>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    async function loadLegalDocuments() {
+      try {
+        const res = await fetch('/api/legal/documents');
+        const data = await res.json();
+        const container = document.getElementById('legal-content');
+
+        if (!res.ok) {
+          container.innerHTML = `<p style="color:#f87171;">Unable to load legal content. Please try again later.</p>`;
+          return;
+        }
+
+        const docs = data.documents || [];
+        if (!docs.length) {
+          container.innerHTML = `<p>No active legal documents found.</p>`;
+          return;
+        }
+
+        container.innerHTML = docs.map(doc => `
+          <section style="margin-bottom:1.75rem;">
+            <h3 style="margin-bottom:0.5rem; color:#fff;">${doc.title} (v${doc.version})</h3>
+            <p style="white-space:pre-line;">${doc.content}</p>
+          </section>
+        `).join('');
+      } catch (err) {
+        const container = document.getElementById('legal-content');
+        container.innerHTML = `<p style="color:#f87171;">Error loading legal documents.</p>`;
+        console.error(err);
+      }
+    }
+
+    async function acceptLegal() {
+      const token = getToken();
+      if (!token) {
+        showToast('You must be logged in to accept legal terms.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/legal/accept', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to accept documents');
+        }
+
+        showToast('Thank you! Legal acceptance recorded.', 'success');
+        setTimeout(() => {
+          const user = getUser();
+          if (user) {
+            redirectUserDashboard(user.role);
+          } else {
+            window.location.href = 'login.html';
+          }
+        }, 1000);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadLegalDocuments();
+      const acceptCheckbox = document.getElementById('legal-acceptance');
+      const acceptBtn = document.getElementById('accept-btn');
+      acceptCheckbox.addEventListener('change', () => {
+        acceptBtn.disabled = !acceptCheckbox.checked;
+      });
+      acceptBtn.addEventListener('click', acceptLegal);
+    });
+  </script>
+</body>
+</html>

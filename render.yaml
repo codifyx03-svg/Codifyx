@@ -1,0 +1,34 @@
+services:
+  - type: web_service
+    name: codifyx-public-api
+    env: node
+    plan: free
+    branch: main
+    buildCommand: cd apps/public-api && npm install
+    startCommand: cd apps/public-api && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        value: change_this_for_testing_only
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://codifyx-solutions.web.app,https://codifyx-solutions.firebaseapp.com"
+      - key: DATABASE_URL
+        value: ""
+
+  - type: web_service
+    name: codifyx-admin-api
+    env: node
+    plan: free
+    branch: main
+    buildCommand: cd apps/admin-api && npm install
+    startCommand: cd apps/admin-api && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        value: change_this_for_testing_only
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://codifyx-solutions-admin.web.app,https://codifyx-solutions-admin.firebaseapp.com"
+      - key: DATABASE_URL
+        value: ""
