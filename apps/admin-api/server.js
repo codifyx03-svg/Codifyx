@@ -61,10 +61,19 @@ const authLimiter = rateLimit({
 app.use(adminLimiter);
 
 // 1. IP Whitelisting Middleware
+function getAllowedAdminIps() {
+  const envIps = process.env.ADMIN_WHITELIST_IPS || '';
+  return envIps
+    .split(',')
+    .map((ip) => ip.trim())
+    .filter(Boolean);
+}
+
 async function checkIpWhitelist(req, res, next) {
   const clientIp = req.ip || req.connection.remoteAddress;
   const cleanIp = clientIp.replace(/^::ffff:/, '');
-  
+  const allowedIps = getAllowedAdminIps();
+
   // Allow the admin login endpoint from any IP, because admin users authenticate with credentials.
   // The whitelist should not block browser-originating login requests for deployed admin sites.
   const allowLoginFromAnyIp = req.path === '/api/admin/auth/portal-secure-login-x97' && req.method === 'POST';
@@ -72,9 +81,9 @@ async function checkIpWhitelist(req, res, next) {
     return next();
   }
 
-  const whitelisted = await database.get('SELECT 1 FROM ip_whitelist WHERE ip_address = ?', [cleanIp])
-    || cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost';
-    
+  const whitelistedInDb = await database.get('SELECT 1 FROM ip_whitelist WHERE ip_address = ?', [cleanIp]);
+  const whitelisted = whitelistedInDb || cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost' || allowedIps.includes(cleanIp);
+
   if (!whitelisted) {
     // Log intrusion attempt
     await database.run(
