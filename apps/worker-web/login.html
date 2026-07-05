@@ -81,7 +81,11 @@
         showToast('Login successful! Redirecting...', 'success');
         setTimeout(() => {
           if (data.redirectTo) {
-            window.location.href = data.redirectTo;
+            let target = data.redirectTo;
+            if (!target.endsWith('.html') && !target.startsWith('http://') && !target.startsWith('https://')) {
+              target += '.html';
+            }
+            window.location.href = target;
           } else {
             redirectUserDashboard(data.user.role);
           }

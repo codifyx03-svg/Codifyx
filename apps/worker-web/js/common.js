@@ -53,14 +53,33 @@ function checkAuth(allowedRoles = []) {
 }
 
 function redirectUserDashboard(role) {
+  const host = window.location.host;
+  const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+
   if (role === 'admin') {
-    window.location.href = 'dashboard-admin.html';
+    if (isLocal) {
+      window.location.href = window.location.protocol + '//' + window.location.hostname + ':3002/dashboard.html';
+    } else {
+      window.location.href = 'https://codifyx-solutions-admin.web.app/dashboard.html';
+    }
   } else if (role === 'client') {
-    window.location.href = 'dashboard-client.html';
+    if (isLocal) {
+      window.location.href = window.location.protocol + '//' + window.location.hostname + ':3000/dashboard-client.html';
+    } else {
+      window.location.href = 'https://codifyx-solutions.web.app/dashboard-client.html';
+    }
   } else if (role === 'worker') {
-    window.location.href = 'dashboard-worker.html';
+    if (isLocal) {
+      window.location.href = window.location.protocol + '//' + window.location.hostname + ':3000/worker/dashboard-worker.html';
+    } else {
+      window.location.href = 'https://codifyx-solutions-worker.web.app/dashboard-worker.html';
+    }
   } else {
-    window.location.href = 'index.html';
+    if (isLocal) {
+      window.location.href = window.location.protocol + '//' + window.location.hostname + ':3000/index.html';
+    } else {
+      window.location.href = 'https://codifyx-solutions.web.app/index.html';
+    }
   }
 }
 
