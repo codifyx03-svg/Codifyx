@@ -1,5 +1,5 @@
 services:
-  - type: web_service
+  - type: web
     name: codifyx-public-api
     env: node
     plan: free
@@ -16,7 +16,7 @@ services:
       - key: DATABASE_URL
         value: ""
 
-  - type: web_service
+  - type: web
     name: codifyx-admin-api
     env: node
     plan: free
