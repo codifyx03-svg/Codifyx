@@ -4,7 +4,7 @@
 
 // API_BASE can be set to your backend service URL (e.g., Cloud Run URL) if frontend and backend are on different domains.
 // Leave blank when serving the frontend through the local proxy on the same origin.
-const API_BASE = '';
+const API_BASE = 'https://codifyx-public-api.onrender.com';
 
 // JWT token helpers
 function getToken() {
