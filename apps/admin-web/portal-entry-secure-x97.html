@@ -118,9 +118,11 @@
       btn.textContent = 'Verifying...';
 
       try {
-        // Use relative path — runner.js proxies /api/* to admin-api:3004 on the same origin
-        const rawFetch = window._rawFetch || window.fetch;
-        const response = await rawFetch('/api/admin/auth/portal-secure-login-x97', {
+        // Build full URL using API_BASE from common.js (points to Render admin-api in production)
+        const loginUrl = (typeof API_BASE !== 'undefined' && API_BASE)
+          ? API_BASE.replace(/\/+$/, '') + '/api/admin/auth/portal-secure-login-x97'
+          : '/api/admin/auth/portal-secure-login-x97';
+        const response = await fetch(loginUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })

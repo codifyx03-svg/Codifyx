@@ -10,9 +10,11 @@ services:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        value: change_this_for_testing_only
+        value: df_jwt_super_secret_key_2024_change_in_production
+      - key: FIELD_ENCRYPTION_KEY
+        value: 087ca6d190a22cd087d2b7657909dccde57683f0023168ff8a5b9fb401b76ea7
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://codifyx-solutions.web.app,https://codifyx-solutions.firebaseapp.com"
+        value: "https://codifyx-solutions.web.app,https://codifyx-solutions.firebaseapp.com,https://codifyx-solutions-worker.web.app,https://codifyx-solutions-worker.firebaseapp.com,https://codifyx-solutions-admin.web.app,https://codifyx-solutions-admin.firebaseapp.com"
       - key: DATABASE_URL
         value: ""
 
@@ -27,8 +29,11 @@ services:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        value: change_this_for_testing_only
+        value: df_jwt_super_secret_key_2024_change_in_production
+      - key: FIELD_ENCRYPTION_KEY
+        value: 087ca6d190a22cd087d2b7657909dccde57683f0023168ff8a5b9fb401b76ea7
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://codifyx-solutions-admin.web.app,https://codifyx-solutions-admin.firebaseapp.com"
+        value: "https://codifyx-solutions-admin.web.app,https://codifyx-solutions-admin.firebaseapp.com,https://codifyx-solutions.web.app,https://codifyx-solutions-worker.web.app"
       - key: DATABASE_URL
         value: ""
+
