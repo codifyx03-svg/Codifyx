@@ -27,16 +27,17 @@ async function verifyPassword(plaintext, hash) {
 const cryptoHelper = require('../security/crypto');
 const { Pool } = require('pg');
 
-const usePostgres = !!(process.env.DATABASE_URL || process.env.PGHOST);
+const usePostgres = !!(process.env.DATABASE_URL && process.env.DATABASE_URL.trim() !== '' || process.env.PGHOST);
 
 let pgPool = null;
 let sqliteDb = null;
 
 if (usePostgres) {
   console.log('🔌 Connecting to PostgreSQL Database...');
-  const isExternal = process.env.DATABASE_URL.includes('render.com');
+  const dbUrl = process.env.DATABASE_URL || '';
+  const isExternal = dbUrl.includes('render.com');
   pgPool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: dbUrl,
     ssl: isExternal ? { rejectUnauthorized: false } : false
   });
 } else {

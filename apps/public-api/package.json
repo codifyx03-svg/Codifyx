@@ -27,11 +27,11 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
     "pg": "^8.22.0",
+    "sqlite3": "^5.1.7",
     "ws": "^8.16.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
-    "sqlite3": "^5.1.7",
     "firebase-admin": "^13.10.0",
     "firebase-functions": "^7.2.5"
   },
