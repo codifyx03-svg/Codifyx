@@ -6,6 +6,7 @@
 // Leave blank when serving the frontend through the local proxy on the same origin.
 const API_BASE = 'https://codifyx-admin-api.onrender.com';
 const API_BASE_PUBLIC = 'https://codifyx-public-api.onrender.com';
+console.log('ADMIN common.js loaded, API_BASE =', API_BASE);
 // JWT token helpers
 function getToken() {
   return localStorage.getItem('df_token');

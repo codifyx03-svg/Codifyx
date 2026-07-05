@@ -65,6 +65,13 @@ async function checkIpWhitelist(req, res, next) {
   const clientIp = req.ip || req.connection.remoteAddress;
   const cleanIp = clientIp.replace(/^::ffff:/, '');
   
+  // Allow the admin login endpoint from any IP, because admin users authenticate with credentials.
+  // The whitelist should not block browser-originating login requests for deployed admin sites.
+  const allowLoginFromAnyIp = req.path === '/api/admin/auth/portal-secure-login-x97' && req.method === 'POST';
+  if (allowLoginFromAnyIp) {
+    return next();
+  }
+
   const whitelisted = await database.get('SELECT 1 FROM ip_whitelist WHERE ip_address = ?', [cleanIp])
     || cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost';
     

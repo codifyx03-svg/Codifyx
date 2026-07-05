@@ -122,6 +122,7 @@
         const loginUrl = (typeof API_BASE !== 'undefined' && API_BASE)
           ? API_BASE.replace(/\/+$/, '') + '/api/admin/auth/portal-secure-login-x97'
           : '/api/admin/auth/portal-secure-login-x97';
+        console.log('Admin login submitting to:', loginUrl);
         const response = await fetch(loginUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
