@@ -270,7 +270,7 @@ async function initDb() {
   // Migrate existing users table if columns are missing
   const cols = await query(`PRAGMA table_info(users)`);
   const migrations = [
-    { name: 'admin_role', sql: 'ALTER TABLE users ADD COLUMN admin_role TEXT CHECK(admin_role IN ("super", "finance", "project", "security"))' },
+    { name: 'admin_role', sql: "ALTER TABLE users ADD COLUMN admin_role TEXT CHECK(admin_role IN ('super', 'finance', 'project', 'security'))" },
     { name: 'totp_secret', sql: 'ALTER TABLE users ADD COLUMN totp_secret TEXT' },
     { name: 'totp_enabled', sql: 'ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0' },
     { name: 'login_attempts', sql: 'ALTER TABLE users ADD COLUMN login_attempts INTEGER DEFAULT 0' },
@@ -396,7 +396,7 @@ async function initDb() {
 
   const taskCols = await query(`PRAGMA table_info(tasks)`);
   const taskMigrations = [
-    { name: 'client_approval_status', sql: 'ALTER TABLE tasks ADD COLUMN client_approval_status TEXT CHECK(client_approval_status IN ("pending", "approved", "rejected")) DEFAULT "pending"' },
+    { name: 'client_approval_status', sql: "ALTER TABLE tasks ADD COLUMN client_approval_status TEXT CHECK(client_approval_status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending'" },
     { name: 'client_approval_note', sql: 'ALTER TABLE tasks ADD COLUMN client_approval_note TEXT' },
     { name: 'client_approved_at', sql: 'ALTER TABLE tasks ADD COLUMN client_approved_at DATETIME' }
   ];
@@ -608,12 +608,12 @@ async function initDb() {
   )`);
 
   // Seed IP Whitelist with localhost
-  const hasLocal1 = await get('SELECT 1 FROM ip_whitelist WHERE ip_address = "127.0.0.1"');
-  if (!hasLocal1) await run('INSERT INTO ip_whitelist (ip_address) VALUES ("127.0.0.1")');
-  const hasLocal2 = await get('SELECT 1 FROM ip_whitelist WHERE ip_address = "::1"');
-  if (!hasLocal2) await run('INSERT INTO ip_whitelist (ip_address) VALUES ("::1")');
-  const hasLocal3 = await get('SELECT 1 FROM ip_whitelist WHERE ip_address = "::ffff:127.0.0.1"');
-  if (!hasLocal3) await run('INSERT INTO ip_whitelist (ip_address) VALUES ("::ffff:127.0.0.1")');
+  const hasLocal1 = await get("SELECT 1 FROM ip_whitelist WHERE ip_address = '127.0.0.1'");
+  if (!hasLocal1) await run("INSERT INTO ip_whitelist (ip_address) VALUES ('127.0.0.1')");
+  const hasLocal2 = await get("SELECT 1 FROM ip_whitelist WHERE ip_address = '::1'");
+  if (!hasLocal2) await run("INSERT INTO ip_whitelist (ip_address) VALUES ('::1')");
+  const hasLocal3 = await get("SELECT 1 FROM ip_whitelist WHERE ip_address = '::ffff:127.0.0.1'");
+  if (!hasLocal3) await run("INSERT INTO ip_whitelist (ip_address) VALUES ('::ffff:127.0.0.1')");
 
   // ──────────────────────────────────────────────────────
   // PAYMENT INFRASTRUCTURE TABLES
@@ -630,8 +630,8 @@ async function initDb() {
   )`);
 
   // Seed platform wallet (user_id = 0) if not exists
-  const platformWallet = await get('SELECT 1 FROM wallets WHERE user_id = 0 AND wallet_type = "platform"');
-  if (!platformWallet) await run('INSERT INTO wallets (user_id, wallet_type, balance) VALUES (0, "platform", 0)');
+  const platformWallet = await get("SELECT 1 FROM wallets WHERE user_id = 0 AND wallet_type = 'platform'");
+  if (!platformWallet) await run("INSERT INTO wallets (user_id, wallet_type, balance) VALUES (0, 'platform', 0)");
 
   // Worker Payouts — record of every payment released to a worker
   await run(`CREATE TABLE IF NOT EXISTS worker_payouts (
@@ -666,7 +666,7 @@ async function initDb() {
 
   const withdrawalCols = await query(`PRAGMA table_info(withdraw_requests)`);
   if (!withdrawalCols.some(col => col.name === 'status')) {
-    await run('ALTER TABLE withdraw_requests ADD COLUMN status TEXT CHECK(status IN ("pending", "approved", "rejected", "paid")) DEFAULT "pending"');
+    await run("ALTER TABLE withdraw_requests ADD COLUMN status TEXT CHECK(status IN ('pending', 'approved', 'rejected', 'paid')) DEFAULT 'pending'");
   }
   if (!usePostgres) {
     const withdrawTable = await get(`SELECT sql FROM sqlite_master WHERE tbl_name = ? AND type = 'table'`, ['withdraw_requests']);
