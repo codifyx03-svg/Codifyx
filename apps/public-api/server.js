@@ -77,7 +77,7 @@ const LATEST_LEGAL_VERSION = 1;
 
 // Trust proxy — required for rate-limiting and session cookies to work correctly
 // behind Render's load balancer (and any other reverse proxy)
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'public-api' });

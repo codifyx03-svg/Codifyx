@@ -22,7 +22,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const DEBUG_OTP = process.env.DEBUG_OTP === 'true' || NODE_ENV !== 'production';
 
 // Trust proxy for rate-limiting
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'admin-api' });
@@ -70,7 +70,7 @@ function getAllowedAdminIps() {
 }
 
 async function checkIpWhitelist(req, res, next) {
-  const clientIp = req.ip || req.connection.remoteAddress;
+  const clientIp = req.headers['true-client-ip'] || req.headers['cf-connecting-ip'] || req.ip || req.connection.remoteAddress;
   const cleanIp = clientIp.replace(/^::ffff:/, '');
   const allowedIps = getAllowedAdminIps();
 
