@@ -174,7 +174,7 @@ app.post('/api/admin/auth/portal-secure-login-x97', authLimiter, async (req, res
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
-    const admin = await database.get('SELECT * FROM users WHERE email = ? AND role = "admin"', [email]);
+    const admin = await database.get("SELECT * FROM users WHERE email = ? AND role = 'admin'", [email]);
     if (!admin) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -331,7 +331,7 @@ app.post('/api/admin/auth/forgot-password', authLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email required' });
 
-    const admin = await database.get('SELECT id, email, name FROM users WHERE email = ? AND role = "admin"', [email.toLowerCase().trim()]);
+    const admin = await database.get("SELECT id, email, name FROM users WHERE email = ? AND role = 'admin'", [email.toLowerCase().trim()]);
 
     // Always return success — never reveal if email exists (prevents enumeration)
     if (!admin) return res.json({ success: true, message: 'If that email is registered, a reset link has been sent.' });
@@ -498,7 +498,7 @@ app.get('/api/admin/workers/:id/profile-stats', authenticateAdminToken, authoriz
 app.delete('/api/admin/workers/:id', authenticateAdminToken, authorizeAdminRoles('project', 'finance'), async (req, res) => {
   try {
     const workerId = Number(req.params.id);
-    const worker = await database.get('SELECT id, name FROM users WHERE id = ? AND role = "worker"', [workerId]);
+    const worker = await database.get("SELECT id, name FROM users WHERE id = ? AND role = 'worker'", [workerId]);
     if (!worker) return res.status(404).json({ error: 'Worker not found' });
 
     // Clean up all worker tables
