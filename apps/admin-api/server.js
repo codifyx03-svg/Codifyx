@@ -168,7 +168,7 @@ async function checkIpWhitelist(req, res, next) {
   }
 
   const whitelistedInDb = await database.get('SELECT 1 FROM ip_whitelist WHERE ip_address = ?', [cleanIp]);
-  const whitelisted = whitelistedInDb || cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost' || allowedIps.includes(cleanIp);
+  const whitelisted = whitelistedInDb || cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost' || allowedIps.includes(cleanIp) || allowedIps.includes('*');
 
   if (!whitelisted) {
     // Log intrusion attempt
