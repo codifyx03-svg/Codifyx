@@ -161,10 +161,28 @@ async function checkIpWhitelist(req, res, next) {
   const allowedIps = getAllowedAdminIps();
 
   // Allow the admin login endpoint from any IP, because admin users authenticate with credentials.
-  // The whitelist should not block browser-originating login requests for deployed admin sites.
   const allowLoginFromAnyIp = req.path === '/api/admin/auth/portal-secure-login-x97' && req.method === 'POST';
   if (allowLoginFromAnyIp) {
     return next();
+  }
+
+  // Pre-authenticate JWT if present, to auto-whitelist valid admin requests
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded && decoded.role === 'admin') {
+        const ipCheck = await database.get('SELECT 1 FROM ip_whitelist WHERE ip_address = ?', [cleanIp]);
+        if (!ipCheck && cleanIp !== '127.0.0.1' && cleanIp !== '::1' && cleanIp !== 'localhost') {
+          await database.run('INSERT INTO ip_whitelist (ip_address) VALUES (?)', [cleanIp]);
+          console.log(`[security] Auto-whitelisted admin token IP: ${cleanIp}`);
+        }
+        return next();
+      }
+    } catch (err) {
+      // Ignore token errors here; authenticateAdminToken will handle invalid tokens later
+    }
   }
 
   const whitelistedInDb = await database.get('SELECT 1 FROM ip_whitelist WHERE ip_address = ?', [cleanIp]);
