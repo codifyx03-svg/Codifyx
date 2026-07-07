@@ -12,7 +12,7 @@ async function main() {
   // Clean up any leftover test data
   const sqlite3 = require('sqlite3').verbose();
   await new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(path.join(__dirname, '..', 'database.db'), (err) => {
+    const db = new sqlite3.Database(path.join(__dirname, '..', '..', 'database.db'), (err) => {
       if (err) return reject(err);
       db.serialize(() => {
         const testEmails = ['worker1@example.com', 'worker2@example.com', 'worker3@example.com', 'worker4@example.com', 'worker5@example.com', 'client@example.com'];
@@ -52,24 +52,30 @@ async function main() {
   tokens.admin = await login('koushishetty8109@gmail.com', '@Koushi2005', true);
   console.log('✓ Admin logged in');
 
-  // 2️⃣ Register 5 workers (4 for team + 1 extra)
+  // 2️⃣ Register 5 workers (4 for team + 1 extra) via admin creation
   const workerEmails = ['worker1@example.com', 'worker2@example.com', 'worker3@example.com', 'worker4@example.com', 'worker5@example.com'];
   for (const email of workerEmails) {
-    const reg = await register(email, email.split('@')[0], 'worker', 'Password1!');
-    await verify(email, reg.verificationCode);
-    // Directly approve in database to avoid API timing issues
-    await new Promise((resolve, reject) => {
-      const sqlite3 = require('sqlite3').verbose();
-      const db = new sqlite3.Database(path.join(__dirname, '..', 'database.db'));
-      db.run('UPDATE users SET approved = 1 WHERE email = ?', [email], (err) => {
-        db.close();
-        if (err) reject(err);
-        else resolve();
-      });
+    const res = await fetch(`${adminBase}/api/admin/workers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokens.admin}`
+      },
+      body: JSON.stringify({
+        name: email.split('@')[0],
+        email: email,
+        password: 'Password1!',
+        skills: 'React, Node.js',
+        experience: '3 years',
+        available_hours: 40,
+        approved: 1
+      })
     });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'Admin worker creation failed');
     tokens[email] = await login(email, 'Password1!');
   }
-  console.log(`✓ ${workerEmails.length} workers registered, verified, and approved\n`);
+  console.log(`✓ ${workerEmails.length} workers registered and approved via admin\n`);
 
   // 3️⃣ Register a client
   const clientReg = await register('client@example.com', 'ClientUser', 'client', 'Password1!');
@@ -183,7 +189,7 @@ async function register(email, name, role, password) {
 
   // Retrieve verification code from database for local testing flow
   const sqlite3 = require('sqlite3').verbose();
-  const db = new sqlite3.Database(path.join(__dirname, '..', 'database.db'));
+  const db = new sqlite3.Database(path.join(__dirname, '..', '..', 'database.db'));
   const user = await new Promise((resolve, reject) => {
     db.get('SELECT verification_code FROM users WHERE email = ?', [email], (err, row) => {
       db.close();

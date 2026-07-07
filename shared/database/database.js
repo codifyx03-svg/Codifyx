@@ -43,7 +43,7 @@ if (usePostgres) {
 } else {
   console.log('📦 Using local SQLite Database...');
   const sqlite3 = require('sqlite3').verbose();
-  const dbPath = path.join(__dirname, '..', 'database.db');
+  const dbPath = path.join(__dirname, '..', '..', 'database.db');
   sqliteDb = new sqlite3.Database(dbPath);
 }
 
@@ -264,6 +264,12 @@ async function initDb() {
     totp_enabled INTEGER DEFAULT 0,
     login_attempts INTEGER DEFAULT 0,
     locked_until DATETIME,
+    invitation_token TEXT,
+    invitation_expiry DATETIME,
+    invitation_status TEXT DEFAULT 'Pending Invitation',
+    profile_picture_url TEXT,
+    bio TEXT,
+    portfolio_url TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
@@ -278,7 +284,13 @@ async function initDb() {
     { name: 'accepted_legal_version', sql: 'ALTER TABLE users ADD COLUMN accepted_legal_version INTEGER DEFAULT 0' },
     { name: 'accepted_legal_at', sql: 'ALTER TABLE users ADD COLUMN accepted_legal_at DATETIME' },
     { name: 'accepted_legal_ip', sql: 'ALTER TABLE users ADD COLUMN accepted_legal_ip TEXT' },
-    { name: 'accepted_legal_user_agent', sql: 'ALTER TABLE users ADD COLUMN accepted_legal_user_agent TEXT' }
+    { name: 'accepted_legal_user_agent', sql: 'ALTER TABLE users ADD COLUMN accepted_legal_user_agent TEXT' },
+    { name: 'profile_picture_url', sql: 'ALTER TABLE users ADD COLUMN profile_picture_url TEXT' },
+    { name: 'bio', sql: 'ALTER TABLE users ADD COLUMN bio TEXT' },
+    { name: 'portfolio_url', sql: 'ALTER TABLE users ADD COLUMN portfolio_url TEXT' },
+    { name: 'invitation_token', sql: 'ALTER TABLE users ADD COLUMN invitation_token TEXT' },
+    { name: 'invitation_expiry', sql: 'ALTER TABLE users ADD COLUMN invitation_expiry DATETIME' },
+    { name: 'invitation_status', sql: "ALTER TABLE users ADD COLUMN invitation_status TEXT DEFAULT 'Pending Invitation'" }
   ];
   for (const m of migrations) {
     if (!cols.some(c => c.name === m.name)) {
@@ -811,6 +823,47 @@ async function initDb() {
     }
     console.log('Seeded Training modules successfully.');
   }
+
+  // --- NEW WORKSPACE TABLES ---
+
+  // Shared Project Files (Secure Workspace)
+  await run(`CREATE TABLE IF NOT EXISTS project_files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    file_name TEXT NOT NULL,
+    file_url TEXT NOT NULL,
+    file_type TEXT DEFAULT 'file',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
+  // Project Milestones
+  await run(`CREATE TABLE IF NOT EXISTS project_milestones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    amount REAL,
+    status TEXT CHECK(status IN ('pending', 'completed')) DEFAULT 'pending',
+    deadline TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+  )`);
+
+  // Project Progress Updates
+  await run(`CREATE TABLE IF NOT EXISTS project_progress_updates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    worker_id INTEGER NOT NULL,
+    update_text TEXT NOT NULL,
+    progress_percentage INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY(worker_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
   } finally {
     isInitializing = false;
   }

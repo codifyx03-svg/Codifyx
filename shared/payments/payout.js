@@ -248,7 +248,7 @@ const PayoutService = {
       [workerId, amount, JSON.stringify(payoutDetails)]
     );
 
-    const newId = result.lastID || result.changes || 0;
+    const newId = result.id || result.changes || 0;
     await _auditFinancial('withdrawal_requested', newId, amount, workerId, {
       workerId, payoutDetails
     });

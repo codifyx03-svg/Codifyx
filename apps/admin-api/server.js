@@ -8,10 +8,96 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const database = require('../../shared/database/database');
+const { hashPassword } = require('../../shared/database/database');
+
+function parseExperienceYears(text) {
+  if (!text) return 0;
+  const str = String(text).trim();
+  const match = str.match(/(\d+)\s*(?:year|yr|yr?s)/i);
+  if (match) return parseInt(match[1], 10);
+  const plainNumber = str.match(/^\s*(\d+)\s*$/);
+  if (plainNumber) return parseInt(plainNumber[1], 10);
+  const anyNumber = str.match(/(\d+)/);
+  if (anyNumber) return parseInt(anyNumber[1], 10);
+  return 0;
+}
 const { logAuditEvent, logSecurityEvent } = require('../../shared/security/audit');
 const { hashToken, generateSecureToken } = require('../../shared/security/crypto');
 const { PayoutService } = require('../../shared/payments/payout');
 require('dotenv').config();
+const nodemailer = require('nodemailer');
+
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+
+let emailTransporter = null;
+let usingEmailFallback = false;
+
+function createEmailFallbackTransporter() {
+  usingEmailFallback = true;
+  emailTransporter = nodemailer.createTransport({
+    streamTransport: true,
+    newline: 'unix',
+    buffer: true
+  });
+  console.log('ℹ️  [Email] Using local fallback email transport. Emails will be logged to the console.');
+}
+
+try {
+  if (!EMAIL_USER || !EMAIL_PASS) {
+    console.warn('⚠️  [Email] Email credentials not configured in .env file. Email will use local fallback logging only.');
+    createEmailFallbackTransporter();
+  } else {
+    emailTransporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: EMAIL_USER, pass: EMAIL_PASS }
+    });
+    emailTransporter.verify((err) => {
+      if (err) {
+        console.warn('❌ [Email] Gmail transporter verification failed:', err.message);
+        createEmailFallbackTransporter();
+      } else {
+        console.log('✅ [Email] Gmail transporter connected successfully');
+      }
+    });
+  }
+} catch (e) {
+  console.warn('❌ [Email] Failed to create transporter:', e.message);
+  createEmailFallbackTransporter();
+}
+
+async function sendEmail(to, subject, htmlBody) {
+  try {
+    if (!emailTransporter) {
+      createEmailFallbackTransporter();
+    }
+
+    const sendResult = await emailTransporter.sendMail({
+      from: usingEmailFallback ? 'codifyx Platform <no-reply@codifyx.local>' : `"codifyx Platform" <${EMAIL_USER}>`,
+      to,
+      subject,
+      html: htmlBody
+    });
+
+    if (usingEmailFallback) {
+      console.log('📨 [Email Preview]');
+      console.log(`To: ${to}`);
+      console.log(`Subject: ${subject}`);
+      console.log(htmlBody);
+      return true;
+    }
+
+    console.log(`✅ [Email] Sent to ${to}: ${subject}`);
+    return true;
+  } catch (err) {
+    console.error('❌ [Email] Failed to send:', err.message);
+    if (!usingEmailFallback) {
+      createEmailFallbackTransporter();
+      console.log('ℹ️  [Email] Switched to fallback transport due to send failure.');
+    }
+    return false;
+  }
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -406,7 +492,11 @@ app.post('/api/admin/auth/reset-password', authLimiter, async (req, res) => {
 // 1. Worker Approval Management (Project/Super Admin)
 app.get('/api/admin/workers/pending', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
   try {
-    const workers = await database.query("SELECT id, name, email, skills, resume_url, experience, available_hours FROM users WHERE role = 'worker' AND approved = 0");
+    const workers = await database.query(
+      `SELECT id, name, email, skills, resume_url, experience, available_hours, invitation_status, invitation_expiry 
+       FROM users 
+       WHERE role = 'worker' AND (invitation_status IN ('Pending Invitation', 'Inactive') OR (invitation_status IS NULL AND approved = 0))`
+    );
     res.json({ success: true, workers });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load pending workers' });
@@ -418,21 +508,441 @@ app.post('/api/admin/workers/:id/approve', authenticateAdminToken, authorizeAdmi
     const { action } = req.body;
     const workerId = req.params.id;
 
-    if (action === 'approve') {
-      await database.run('UPDATE users SET approved = 1 WHERE id = ?', [workerId]);
-      res.json({ success: true, message: 'Worker approved successfully.' });
+    if (action === 'approve' || action === 'enable') {
+      await database.run("UPDATE users SET approved = 1, invitation_status = 'Active' WHERE id = ?", [workerId]);
+      res.json({ success: true, message: 'Worker enabled/approved successfully.' });
+    } else if (action === 'disable') {
+      await database.run("UPDATE users SET approved = 0, invitation_status = 'Suspended' WHERE id = ?", [workerId]);
+      res.json({ success: true, message: 'Worker disabled successfully.' });
     } else {
+      // Clean up all worker tables
+      await database.run('DELETE FROM group_members WHERE worker_id = ?', [workerId]);
+      await database.run('DELETE FROM resumes WHERE user_id = ?', [workerId]);
+      await database.run('DELETE FROM wallets WHERE user_id = ?', [workerId]);
+      await database.run('DELETE FROM withdraw_requests WHERE worker_id = ?', [workerId]);
+      await database.run('UPDATE tasks SET assigned_worker_id = NULL WHERE assigned_worker_id = ?', [workerId]);
       await database.run('DELETE FROM users WHERE id = ?', [workerId]);
-      res.json({ success: true, message: 'Worker rejected.' });
+      res.json({ success: true, message: 'Worker rejected/deleted.' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update worker approval' });
+    res.status(500).json({ error: 'Failed to update worker approval/status' });
+  }
+});
+
+// Create/Invite worker account internally
+app.post('/api/admin/workers', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
+  try {
+    const { name, email, password, skills, experience, available_hours, approved } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required' });
+    }
+
+    const userExists = await database.get('SELECT id FROM users WHERE email = ?', [email]);
+    if (userExists) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    if (password) {
+      // Direct registration (legacy/test backward compatibility mode)
+      const passwordHash = await hashPassword(password);
+      const isApproved = approved !== undefined ? (approved ? 1 : 0) : 1;
+      
+      const result = await database.run(
+        `INSERT INTO users (role, email, password_hash, name, skills, experience, available_hours, approved, verified, invitation_status, experience_years)
+         VALUES ('worker', ?, ?, ?, ?, ?, ?, ?, 1, 'Active', ?)`,
+        [
+          email, 
+          passwordHash, 
+          name, 
+          skills || null, 
+          experience || null, 
+          available_hours ? parseInt(available_hours) : null,
+          isApproved,
+          parseExperienceYears(experience)
+        ]
+      );
+      
+      const newWorkerId = result.id;
+      await database.run(
+        'INSERT INTO wallets (user_id, wallet_type, balance) VALUES (?, ?, 0)',
+        [newWorkerId, 'worker']
+      );
+
+      await logAuditEvent({
+        userId: req.user.id,
+        userEmail: req.user.email,
+        role: req.user.admin_role || 'project',
+        action: 'worker_created_directly',
+        details: `Created worker directly (test mode): ${name} (${email})`,
+        ipAddress: req.ip,
+        severity: 'medium'
+      });
+
+      return res.json({ success: true, workerId: newWorkerId, message: 'Worker account created successfully.' });
+    }
+
+    // Normal invitation mode
+    const token = generateSecureToken();
+    const hashedToken = hashToken(token);
+
+    const result = await database.run(
+      `INSERT INTO users (role, email, password_hash, name, approved, verified, invitation_token, invitation_expiry, invitation_status)
+       VALUES ('worker', ?, 'invitation_pending_placeholder_hash', ?, 0, 0, ?, datetime('now', '+48 hours'), 'Pending Invitation')`,
+      [email, name, hashedToken]
+    );
+
+    const newWorkerId = result.id;
+    // Create wallet for worker
+    await database.run(
+      'INSERT INTO wallets (user_id, wallet_type, balance) VALUES (?, ?, 0)',
+      [newWorkerId, 'worker']
+    );
+
+    // Send invitation email
+    const activationLink = `https://codifyx-solutions-worker.web.app/activate?token=${token}`;
+    const emailSubject = 'Welcome to CodifyX – Complete Your Account';
+    const emailBody = `Hello ${name},
+
+You have been invited to join CodifyX.
+
+Click the secure link below to activate your account:
+
+${activationLink}
+
+This invitation expires in 48 hours.
+
+If you were not expecting this invitation, simply ignore this email.
+
+Regards,
+CodifyX Team`;
+
+    await sendEmail(email, emailSubject, emailBody);
+
+    await logAuditEvent({
+      userId: req.user.id,
+      userEmail: req.user.email,
+      role: req.user.admin_role || 'project',
+      action: 'worker_invited',
+      details: `Invited worker: ${name} (${email})`,
+      ipAddress: req.ip,
+      severity: 'medium'
+    });
+
+    res.json({ success: true, workerId: newWorkerId, token: token, message: 'Worker invitation sent successfully.' });
+  } catch (error) {
+    console.error('Error creating worker account:', error);
+    res.status(500).json({ error: 'Failed to create worker account and send invitation.' });
+  }
+});
+
+// Resend invitation
+app.post('/api/admin/workers/:id/resend-invite', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
+  try {
+    const workerId = req.params.id;
+    const worker = await database.get("SELECT id, name, email, invitation_status FROM users WHERE id = ? AND role = 'worker'", [workerId]);
+    if (!worker) return res.status(404).json({ error: 'Worker not found' });
+
+    if (worker.invitation_status !== 'Pending Invitation' && worker.invitation_status !== 'Inactive') {
+      return res.status(400).json({ error: 'Only pending or inactive invitations can be resent' });
+    }
+
+    const token = generateSecureToken();
+    const hashedToken = hashToken(token);
+
+    await database.run(
+      `UPDATE users SET 
+         invitation_token = ?, 
+         invitation_expiry = datetime('now', '+48 hours'), 
+         invitation_status = 'Pending Invitation',
+         approved = 0,
+         verified = 0
+       WHERE id = ?`,
+      [hashedToken, workerId]
+    );
+
+    const activationLink = `https://codifyx-solutions-worker.web.app/activate?token=${token}`;
+    const emailSubject = 'Welcome to CodifyX – Complete Your Account';
+    const emailBody = `Hello ${worker.name},
+
+You have been invited to join CodifyX.
+
+Click the secure link below to activate your account:
+
+${activationLink}
+
+This invitation expires in 48 hours.
+
+If you were not expecting this invitation, simply ignore this email.
+
+Regards,
+CodifyX Team`;
+
+    await sendEmail(worker.email, emailSubject, emailBody);
+
+    await logAuditEvent({
+      userId: req.user.id,
+      userEmail: req.user.email,
+      role: req.user.admin_role || 'project',
+      action: 'worker_invite_resent',
+      details: `Resent invitation to worker: ${worker.name} (${worker.email})`,
+      ipAddress: req.ip,
+      severity: 'medium'
+    });
+
+    res.json({ success: true, token: token, message: 'Invitation email resent successfully.' });
+  } catch (error) {
+    console.error('Error resending invitation:', error);
+    res.status(500).json({ error: 'Failed to resend invitation' });
+  }
+});
+
+// Cancel invitation
+app.post('/api/admin/workers/:id/cancel-invite', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
+  try {
+    const workerId = req.params.id;
+    const worker = await database.get("SELECT id, name, email, invitation_status FROM users WHERE id = ? AND role = 'worker'", [workerId]);
+    if (!worker) return res.status(404).json({ error: 'Worker not found' });
+
+    if (worker.invitation_status !== 'Pending Invitation') {
+      return res.status(400).json({ error: 'Only pending invitations can be cancelled' });
+    }
+
+    await database.run(
+      `UPDATE users SET 
+         invitation_token = NULL, 
+         invitation_expiry = NULL, 
+         invitation_status = 'Inactive',
+         approved = 0
+       WHERE id = ?`,
+      [workerId]
+    );
+
+    await logAuditEvent({
+      userId: req.user.id,
+      userEmail: req.user.email,
+      role: req.user.admin_role || 'project',
+      action: 'worker_invite_cancelled',
+      details: `Cancelled invitation for worker: ${worker.name} (${worker.email})`,
+      ipAddress: req.ip,
+      severity: 'medium'
+    });
+
+    res.json({ success: true, message: 'Invitation cancelled successfully.' });
+  } catch (error) {
+    console.error('Error cancelling invitation:', error);
+    res.status(500).json({ error: 'Failed to cancel invitation' });
+  }
+});
+
+// Suspend worker
+app.post('/api/admin/workers/:id/suspend', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
+  try {
+    const workerId = req.params.id;
+    const worker = await database.get("SELECT id, name, email FROM users WHERE id = ? AND role = 'worker'", [workerId]);
+    if (!worker) return res.status(404).json({ error: 'Worker not found' });
+
+    await database.run(
+      `UPDATE users SET 
+         invitation_status = 'Suspended',
+         approved = 0
+       WHERE id = ?`,
+      [workerId]
+    );
+
+    await logAuditEvent({
+      userId: req.user.id,
+      userEmail: req.user.email,
+      role: req.user.admin_role || 'project',
+      action: 'worker_suspended',
+      details: `Suspended worker: ${worker.name} (${worker.email})`,
+      ipAddress: req.ip,
+      severity: 'high'
+    });
+
+    res.json({ success: true, message: 'Worker suspended successfully.' });
+  } catch (error) {
+    console.error('Error suspending worker:', error);
+    res.status(500).json({ error: 'Failed to suspend worker' });
+  }
+});
+
+// Reactivate worker
+app.post('/api/admin/workers/:id/reactivate', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
+  try {
+    const workerId = req.params.id;
+    const worker = await database.get("SELECT id, name, email FROM users WHERE id = ? AND role = 'worker'", [workerId]);
+    if (!worker) return res.status(404).json({ error: 'Worker not found' });
+
+    await database.run(
+      `UPDATE users SET 
+         invitation_status = 'Active',
+         approved = 1
+       WHERE id = ?`,
+      [workerId]
+    );
+
+    await logAuditEvent({
+      userId: req.user.id,
+      userEmail: req.user.email,
+      role: req.user.admin_role || 'project',
+      action: 'worker_reactivated',
+      details: `Reactivated worker: ${worker.name} (${worker.email})`,
+      ipAddress: req.ip,
+      severity: 'high'
+    });
+
+    res.json({ success: true, message: 'Worker reactivated successfully.' });
+  } catch (error) {
+    console.error('Error reactivating worker:', error);
+    res.status(500).json({ error: 'Failed to reactivate worker' });
+  }
+});
+
+// Edit worker account details
+app.put('/api/admin/workers/:id', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
+  try {
+    const workerId = req.params.id;
+    const { name, email, password, skills, experience, available_hours, approved } = req.body;
+
+    const worker = await database.get("SELECT id FROM users WHERE id = ? AND role = 'worker'", [workerId]);
+    if (!worker) return res.status(404).json({ error: 'Worker not found' });
+
+    if (email) {
+      const emailExists = await database.get('SELECT id FROM users WHERE email = ? AND id != ?', [email, workerId]);
+      if (emailExists) {
+        return res.status(400).json({ error: 'Email already in use by another user' });
+      }
+    }
+
+    // Update query parts
+    let queryStr = 'UPDATE users SET ';
+    const params = [];
+    const updates = [];
+
+    if (name !== undefined) {
+      updates.push('name = ?');
+      params.push(name);
+    }
+    if (email !== undefined) {
+      updates.push('email = ?');
+      params.push(email);
+    }
+    if (password) {
+      const passwordHash = await database.hashPassword(password);
+      updates.push('password_hash = ?');
+      params.push(passwordHash);
+    }
+    if (skills !== undefined) {
+      updates.push('skills = ?');
+      params.push(skills);
+    }
+    if (experience !== undefined) {
+      updates.push('experience = ?');
+      params.push(experience);
+    }
+    if (available_hours !== undefined) {
+      updates.push('available_hours = ?');
+      params.push(available_hours ? parseInt(available_hours) : null);
+    }
+    if (approved !== undefined) {
+      updates.push('approved = ?');
+      params.push(approved ? 1 : 0);
+      updates.push('invitation_status = ?');
+      params.push(approved ? 'Active' : 'Suspended');
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    queryStr += updates.join(', ') + ' WHERE id = ?';
+    params.push(workerId);
+
+    await database.run(queryStr, params);
+    res.json({ success: true, message: 'Worker account updated successfully.' });
+  } catch (error) {
+    console.error('Error updating worker account:', error);
+    res.status(500).json({ error: 'Failed to update worker account' });
+  }
+});
+
+// Get currently assigned workers for a project
+app.get('/api/admin/projects/:id/assigned-workers', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const group = await database.get('SELECT id FROM groups WHERE project_id = ?', [projectId]);
+    if (!group) {
+      return res.json({ success: true, worker_ids: [] });
+    }
+    const members = await database.query('SELECT worker_id FROM group_members WHERE group_id = ?', [group.id]);
+    res.json({ success: true, worker_ids: members.map(m => m.worker_id) });
+  } catch (error) {
+    console.error('Error fetching assigned workers:', error);
+    res.status(500).json({ error: 'Failed to fetch assigned workers' });
+  }
+});
+
+// Assign workers to project (creates group workspace if not exists, and maps members)
+app.post('/api/admin/projects/:id/assign', authenticateAdminToken, authorizeAdminRoles('project'), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { worker_ids } = req.body;
+
+    if (!worker_ids || !Array.isArray(worker_ids)) {
+      return res.status(400).json({ error: 'worker_ids array is required' });
+    }
+
+    const project = await database.get('SELECT * FROM projects WHERE id = ?', [projectId]);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    let group = await database.get('SELECT id FROM groups WHERE project_id = ?', [projectId]);
+    let groupId;
+    if (!group) {
+      const groupResult = await database.run(
+        `INSERT INTO groups (name, client_id, leader_id, project_id, description) VALUES (?, ?, ?, ?, ?)`,
+        [
+          `Project ${projectId} Workspace`,
+          project.client_id,
+          worker_ids[0] || null,
+          projectId,
+          'Secure project workspace'
+        ]
+      );
+      groupId = groupResult.id;
+      await database.run('UPDATE tasks SET group_id = ? WHERE project_id = ?', [groupId, projectId]);
+    } else {
+      groupId = group.id;
+    }
+
+    await database.run('DELETE FROM group_members WHERE group_id = ?', [groupId]);
+
+    for (let i = 0; i < worker_ids.length; i++) {
+      const workerId = worker_ids[i];
+      const isLeader = i === 0 ? 1 : 0;
+      await database.run(
+        'INSERT OR IGNORE INTO group_members (group_id, worker_id, is_leader) VALUES (?, ?, ?)',
+        [groupId, workerId, isLeader]
+      );
+    }
+
+    await database.run('UPDATE projects SET status = ? WHERE id = ?', ['team-assigned', projectId]);
+
+    res.json({ success: true, message: 'Workers assigned to project successfully.' });
+  } catch (error) {
+    console.error('Error assigning workers to project:', error);
+    res.status(500).json({ error: 'Failed to assign workers to project' });
   }
 });
 
 app.get('/api/admin/workers/approved', authenticateAdminToken, authorizeAdminRoles('project', 'finance'), async (req, res) => {
   try {
-    const workers = await database.query("SELECT id, name, email, skills, experience, experience_years FROM users WHERE role = 'worker' AND approved = 1 ORDER BY experience_years DESC");
+    const workers = await database.query(
+      `SELECT id, name, email, skills, experience, experience_years, invitation_status, approved 
+       FROM users 
+       WHERE role = 'worker' AND (invitation_status IN ('Active', 'Suspended') OR invitation_status IS NULL OR approved = 1) 
+       ORDER BY experience_years DESC`
+    );
     res.json({ success: true, workers });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load workers' });
@@ -965,7 +1475,7 @@ app.post('/api/admin/legal/documents', authenticateAdminToken, authorizeAdminRol
       [document_type, nextVersion, title, content, active ? 1 : 0]
     );
 
-    const createdDoc = await database.get('SELECT * FROM legal_documents WHERE id = ?', [result.lastID]);
+    const createdDoc = await database.get('SELECT * FROM legal_documents WHERE id = ?', [result.id]);
     res.json({ success: true, document: createdDoc });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create legal document' });

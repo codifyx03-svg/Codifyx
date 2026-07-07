@@ -200,8 +200,8 @@ async function loadWorkersManagement() {
   const pendingTbody = document.getElementById('pending-workers-table-body');
   const vettedTbody = document.getElementById('vetted-workers-table-body');
 
-  pendingTbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Loading worker applications...</td></tr>';
-  vettedTbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Loading active developers...</td></tr>';
+  pendingTbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Loading worker invitations...</td></tr>';
+  vettedTbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Loading developers...</td></tr>';
 
   try {
     // 1. Fetch Pending
@@ -214,25 +214,71 @@ async function loadWorkersManagement() {
     pendingTbody.innerHTML = '';
     pendingData.workers.forEach(w => {
       const tr = document.createElement('tr');
-      const resumeLink = w.resume_url 
-        ? `<a href="${w.resume_url}" target="_blank" style="color:var(--color-primary)">View Resume</a>` 
-        : '<span style="color:var(--text-muted)">No File</span>';
+      const status = w.invitation_status || 'Pending Invitation';
+      
+      // Calculate remaining time
+      let expiryText = '';
+      let isExpired = false;
+      if (w.invitation_expiry) {
+        const diffMs = new Date(w.invitation_expiry) - new Date();
+        if (diffMs < 0) {
+          expiryText = '<span style="color:#ef4444; font-weight:bold;">Expired</span>';
+          isExpired = true;
+        } else {
+          const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+          const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          expiryText = `<span style="color:#10b981; font-weight:500;">${diffHours}h ${diffMins}m remaining</span>`;
+        }
+      } else {
+        expiryText = '<span style="color:var(--text-muted);">N/A</span>';
+      }
+
+      // Status badge styling
+      let statusStyle = 'background:rgba(168,85,247,0.2); color:#a855f7; border:1px solid #a855f7;';
+      if (status === 'Inactive') {
+        statusStyle = 'background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid #ef4444;';
+      } else if (isExpired) {
+        statusStyle = 'background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid #ef4444;';
+      } else if (status === 'Pending Invitation') {
+        statusStyle = 'background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid #f59e0b;';
+      }
+      
+      const statusBadge = `<span class="status-badge" style="font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:4px; ${statusStyle}">${status}</span>`;
+
+      // Formulate Action Buttons
+      let actionButtons = '';
+      if (status === 'Pending Invitation') {
+        actionButtons = `
+          <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:#a855f7; color:#fff; margin-right:0.25rem" onclick="resendInvitation(${w.id})">Resend</button>
+          <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:#f59e0b; color:#fff; margin-right:0.25rem" onclick="cancelInvitation(${w.id})">Cancel</button>
+          <button class="btn btn-primary" style="background:#ef4444; border-color:#dc2626; padding:0.4rem 0.8rem; font-size:0.8rem" onclick="processWorkerOnboard(${w.id}, 'reject')">Delete</button>
+        `;
+      } else if (status === 'Inactive') {
+        actionButtons = `
+          <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:#a855f7; color:#fff; margin-right:0.25rem" onclick="resendInvitation(${w.id})">Resend</button>
+          <button class="btn btn-primary" style="background:#ef4444; border-color:#dc2626; padding:0.4rem 0.8rem; font-size:0.8rem" onclick="processWorkerOnboard(${w.id}, 'reject')">Delete</button>
+        `;
+      } else {
+        // Fallback/Legacy unapproved
+        actionButtons = `
+          <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem; margin-right:0.25rem" onclick="processWorkerOnboard(${w.id}, 'approve')">Enable</button>
+          <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem; margin-right:0.25rem" onclick="openEditWorkerModal(${w.id})">Edit</button>
+          <button class="btn btn-primary" style="background:#ef4444; border-color:#dc2626; padding:0.4rem 0.8rem; font-size:0.8rem" onclick="processWorkerOnboard(${w.id}, 'reject')">Delete</button>
+        `;
+      }
 
       tr.innerHTML = `
-        <td><strong>${w.name}</strong> (Age: ${w.age || 'N/A'})</td>
+        <td><strong>${w.name}</strong></td>
         <td>${w.email}</td>
-        <td><span style="color:#a855f7">${w.skills || 'None'}</span></td>
-        <td>${resumeLink}</td>
-        <td>
-          <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem; margin-right:0.25rem" onclick="processWorkerOnboard(${w.id}, 'approve')">Approve</button>
-          <button class="btn btn-primary" style="background:#ef4444; padding:0.4rem 0.8rem; font-size:0.8rem" onclick="processWorkerOnboard(${w.id}, 'reject')">Reject</button>
-        </td>
+        <td>${statusBadge}</td>
+        <td>${expiryText}</td>
+        <td>${actionButtons}</td>
       `;
       pendingTbody.appendChild(tr);
     });
 
     if (pendingData.workers.length === 0) {
-      pendingTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted)">No pending worker registrations in the queue.</td></tr>`;
+      pendingTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted)">No pending worker invitations.</td></tr>`;
     }
 
     // 2. Fetch Active Vetted
@@ -258,18 +304,30 @@ async function loadWorkersManagement() {
 
       const coreBadge = isCore ? `<span class="status-badge" style="background:rgba(245,158,11,0.2); color:#f59e0b; border-color:#f59e0b; font-size:0.7rem; padding:0.15rem 0.35rem; margin-left:0.5rem; display:inline-block; vertical-align:middle;">⭐ Core</span>` : '';
 
+      const isSuspended = w.invitation_status === 'Suspended' || (!w.approved && w.invitation_status !== 'Pending Invitation');
+      const statusBadge = isSuspended 
+        ? `<span class="status-badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border-color:#ef4444; font-size:0.7rem; padding:0.15rem 0.35rem; margin-left:0.5rem; display:inline-block; vertical-align:middle;">Suspended</span>`
+        : `<span class="status-badge" style="background:rgba(16,185,129,0.2); color:#10b981; border-color:#10b981; font-size:0.7rem; padding:0.15rem 0.35rem; margin-left:0.5rem; display:inline-block; vertical-align:middle;">Active</span>`;
+
+      const suspendReactivateBtn = isSuspended
+        ? `<button class="btn btn-secondary" style="background:#10b981; border-color:#059669; color:#fff; padding:0.3rem 0.6rem; font-size:0.75rem; margin-right:0.25rem;" onclick="reactivateWorker(${w.id})">Reactivate</button>`
+        : `<button class="btn btn-secondary" style="background:#f59e0b; border-color:#d97706; color:#fff; padding:0.3rem 0.6rem; font-size:0.75rem; margin-right:0.25rem;" onclick="suspendWorker(${w.id})">Suspend</button>`;
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>#${w.id}</td>
         <td>
           <a href="#" style="color:#fff; font-weight:600; text-decoration:none;" onclick="openWorkerProfile(${w.id}); return false;">${w.name}</a>
           ${coreBadge}
+          ${statusBadge}
         </td>
         <td>${w.email}</td>
         <td><span style="color:#10b981">${w.skills || 'General Developer'}</span></td>
         <td><span style="color:#a855f7">${w.experience || 'N/A'}</span></td>
         <td>
           <button class="btn btn-secondary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-color:var(--color-primary); color:#fff; margin-right:0.25rem;" onclick="openWorkerProfile(${w.id})">🔍 View Stats</button>
+          <button class="btn btn-secondary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-color:#a855f7; color:#fff; margin-right:0.25rem;" onclick="openEditWorkerModal(${w.id})">Edit</button>
+          ${suspendReactivateBtn}
           ${promoteBtn}
           <button class="btn btn-secondary" style="background:#ef4444; border-color:#dc2626; color:#fff; padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="removeWorker(${w.id})">Remove</button>
         </td>
@@ -278,7 +336,7 @@ async function loadWorkersManagement() {
     });
 
     if (vettedData.workers.length === 0) {
-      vettedTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted)">No approved developers active yet.</td></tr>`;
+      vettedTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted)">No active developers.</td></tr>`;
     }
 
   } catch (err) {
@@ -533,8 +591,13 @@ async function loadProjectsBoard() {
             <button class="btn btn-secondary" style="background:#ef4444; border-color:#dc2626; color:#fff; padding:0.4rem 0.8rem; font-size:0.8rem" onclick="adminRejectRevisedBudget(${p.id})">✗ Reject Budget</button>
             <button class="btn btn-secondary" style="background:#f59e0b; border-color:#d97706; color:#fff; padding:0.4rem 0.8rem; font-size:0.8rem" onclick="openBudgetRevisionModal(${p.id}, ${p.budget})">Re-request Revision</button>
           </div>`;
-      } else if (p.status === 'in development' || p.status === 'completed') {
-        actionBtn = `<button class="btn btn-secondary" style="border-color:var(--color-primary); color:#fff" onclick="openProjectManagementDetails(${p.id})">Manage Tasks</button>`;
+      } else if (p.status === 'in development' || p.status === 'team-assigned' || p.status === 'completed') {
+        actionBtn = `
+          <div style="display:flex; gap:0.4rem">
+            <button class="btn btn-secondary" style="border-color:var(--color-primary); color:#fff; padding:0.4rem 0.8rem; font-size:0.8rem" onclick="openProjectManagementDetails(${p.id})">Manage Tasks</button>
+            <button class="btn btn-secondary" style="border-color:#a855f7; color:#fff; background:rgba(168,85,247,0.1); padding:0.4rem 0.8rem; font-size:0.8rem" onclick="openAssignTeamModal(${p.id})">Assign Workers</button>
+          </div>
+        `;
       } else {
         actionBtn = `<button class="btn btn-secondary" style="border-color:var(--color-primary); color:#fff" onclick="openProjectManagementDetails(${p.id})">Manage Tasks</button>`;
       }
@@ -2054,5 +2117,306 @@ function enforceRBAC(role) {
   const activePanel = document.getElementById(`view-${defaultView}`);
   if (activePanel) {
     activePanel.classList.add('active');
+  }
+}
+
+// ==========================================
+// WORKFORCE & ASSIGNMENT FRONTEND CONTROLLERS
+// ==========================================
+
+function openCreateWorkerModal() {
+  document.getElementById('worker-editor-title').innerText = 'Invite Worker';
+  document.getElementById('editor-worker-id').value = '';
+  document.getElementById('worker-editor-form').reset();
+  
+  // Hide details and password for invites
+  document.getElementById('editor-worker-password-group').style.display = 'none';
+  document.getElementById('editor-worker-skills-group').style.display = 'none';
+  document.getElementById('editor-worker-experience-group').style.display = 'none';
+  document.getElementById('editor-worker-hours-group').style.display = 'none';
+  document.getElementById('editor-worker-status-group').style.display = 'none';
+  
+  document.getElementById('editor-worker-password').required = false;
+  document.getElementById('worker-editor-submit-btn').innerText = 'Send Invitation';
+  
+  document.getElementById('worker-editor-modal').classList.add('active');
+}
+
+function closeWorkerEditorModal() {
+  document.getElementById('worker-editor-modal').classList.remove('active');
+}
+
+async function openEditWorkerModal(workerId) {
+  try {
+    const res = await fetch(`/api/admin/workers/${workerId}/profile-stats`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const w = data.worker;
+    document.getElementById('worker-editor-title').innerText = 'Edit Worker Account';
+    document.getElementById('editor-worker-id').value = w.id;
+    document.getElementById('editor-worker-name').value = w.name;
+    document.getElementById('editor-worker-email').value = w.email;
+    
+    // Show all fields for editing
+    document.getElementById('editor-worker-password-group').style.display = 'block';
+    document.getElementById('editor-worker-skills-group').style.display = 'block';
+    document.getElementById('editor-worker-experience-group').style.display = 'block';
+    document.getElementById('editor-worker-hours-group').style.display = 'block';
+    document.getElementById('editor-worker-status-group').style.display = 'block';
+    
+    // Password is optional during edits
+    document.getElementById('editor-worker-password-label').innerText = 'Password (leave blank to keep unchanged)';
+    document.getElementById('editor-worker-password').required = false;
+    document.getElementById('editor-worker-password').value = '';
+    
+    document.getElementById('editor-worker-skills').value = w.skills || '';
+    document.getElementById('editor-worker-experience').value = w.experience || '';
+    document.getElementById('editor-worker-hours').value = w.available_hours || '';
+    document.getElementById('editor-worker-status').value = w.approved ? '1' : '0';
+
+    document.getElementById('worker-editor-submit-btn').innerText = 'Save Changes';
+    document.getElementById('worker-editor-modal').classList.add('active');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function saveWorkerDetails(event) {
+  event.preventDefault();
+  
+  const workerId = document.getElementById('editor-worker-id').value;
+  let payload;
+
+  if (workerId) {
+    // Edit mode
+    payload = {
+      name: document.getElementById('editor-worker-name').value,
+      email: document.getElementById('editor-worker-email').value,
+      skills: document.getElementById('editor-worker-skills').value,
+      experience: document.getElementById('editor-worker-experience').value,
+      available_hours: document.getElementById('editor-worker-hours').value,
+      approved: parseInt(document.getElementById('editor-worker-status').value)
+    };
+
+    const password = document.getElementById('editor-worker-password').value;
+    if (password) {
+      payload.password = password;
+    }
+  } else {
+    // Invite mode - only Name and Email
+    payload = {
+      name: document.getElementById('editor-worker-name').value,
+      email: document.getElementById('editor-worker-email').value
+    };
+  }
+
+  try {
+    let res;
+    if (workerId) {
+      // Edit mode
+      res = await fetch(`/api/admin/workers/${workerId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      // Create mode
+      res = await fetch(`/api/admin/workers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast(data.message || 'Worker details saved successfully!', 'success');
+    closeWorkerEditorModal();
+    loadWorkersManagement();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function toggleWorkerStatus(workerId, currentStatus) {
+  try {
+    const res = await fetch(`/api/admin/workers/${workerId}/approve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({ action: currentStatus ? 'disable' : 'enable' })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast(data.message, 'success');
+    loadWorkersManagement();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function closeProjectTeamModal() {
+  document.getElementById('project-team-modal').classList.remove('active');
+}
+
+async function openAssignTeamModal(projectId) {
+  try {
+    document.getElementById('assign-project-id').value = projectId;
+    const container = document.getElementById('assign-workers-checkboxes-container');
+    container.innerHTML = '<p style="color:var(--text-muted)">Loading workers...</p>';
+
+    // Fetch approved workers
+    const workersRes = await fetch('/api/admin/workers/approved', {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const workersData = await workersRes.json();
+    if (!workersRes.ok) throw new Error(workersData.error);
+
+    // Fetch currently assigned workers
+    const assignedRes = await fetch(`/api/admin/projects/${projectId}/assigned-workers`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const assignedData = await assignedRes.json();
+    if (!assignedRes.ok) throw new Error(assignedData.error);
+
+    const assignedIds = assignedData.worker_ids || [];
+
+    container.innerHTML = '';
+    if (workersData.workers.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted)">No approved workers available to assign.</p>';
+    } else {
+      workersData.workers.forEach(w => {
+        const checked = assignedIds.includes(w.id) ? 'checked' : '';
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '0.5rem';
+        div.innerHTML = `
+          <input type="checkbox" id="assign-cb-${w.id}" value="${w.id}" ${checked}>
+          <label for="assign-cb-${w.id}" style="color:#fff; cursor:pointer;">
+            <strong>${w.name}</strong> <span style="color:var(--text-muted); font-size:0.8rem">(${w.email})</span>
+          </label>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById('project-team-modal').classList.add('active');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function saveTeamAssignment(event) {
+  event.preventDefault();
+
+  const projectId = document.getElementById('assign-project-id').value;
+  const checkboxes = document.querySelectorAll('#assign-workers-checkboxes-container input[type="checkbox"]:checked');
+  const workerIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+  try {
+    const res = await fetch(`/api/admin/projects/${projectId}/assign`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({ worker_ids: workerIds })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast(data.message, 'success');
+    closeProjectTeamModal();
+    loadProjectsBoard();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function resendInvitation(workerId) {
+  try {
+    const res = await fetch(`/api/admin/workers/${workerId}/resend-invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showToast(data.message || 'Invitation resent successfully.', 'success');
+    loadWorkersManagement();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function cancelInvitation(workerId) {
+  try {
+    const res = await fetch(`/api/admin/workers/${workerId}/cancel-invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showToast(data.message || 'Invitation cancelled successfully.', 'success');
+    loadWorkersManagement();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function suspendWorker(workerId) {
+  try {
+    const res = await fetch(`/api/admin/workers/${workerId}/suspend`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showToast(data.message || 'Worker suspended successfully.', 'success');
+    loadWorkersManagement();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function reactivateWorker(workerId) {
+  try {
+    const res = await fetch(`/api/admin/workers/${workerId}/reactivate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showToast(data.message || 'Worker reactivated successfully.', 'success');
+    loadWorkersManagement();
+  } catch (err) {
+    showToast(err.message, 'error');
   }
 }

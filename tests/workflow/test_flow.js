@@ -15,7 +15,7 @@ async function main() {
   // Cleanup old test data so the test is repeatable
   const sqlite3 = require('sqlite3').verbose();
   await new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(path.join(__dirname, '..', 'database.db'), (err) => {
+    const db = new sqlite3.Database(path.join(__dirname, '..', '..', 'database.db'), (err) => {
       if (err) return reject(err);
       db.serialize(() => {
         const testEmails = ['client@example.com', 'worker@example.com', 'extra1@example.com', 'extra2@example.com', 'extra3@example.com'];
@@ -140,7 +140,7 @@ async function register(email, name, role, password, withResume = false) {
 
   // Retrieve verification code from database for local testing flow
   const sqlite3 = require('sqlite3').verbose();
-  const db = new sqlite3.Database(path.join(__dirname, '..', 'database.db'));
+  const db = new sqlite3.Database(path.join(__dirname, '..', '..', 'database.db'));
   const user = await new Promise((resolve, reject) => {
     db.get('SELECT verification_code FROM users WHERE email = ?', [email], (err, row) => {
       db.close();
@@ -270,11 +270,25 @@ async function adminApproveWorker(adminToken, workerId) {
 }
 
 async function registerAndApproveWorker(adminToken, email, name, password) {
-  const reg = await register(email, name, 'worker', password, true);
-  await verify(email, reg.verificationCode);
-  const workerId = await getPendingWorkerId(adminToken, email);
-  await adminApproveWorker(adminToken, workerId);
-  return reg;
+  const res = await fetch(`${adminBase}/api/admin/workers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`
+    },
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      skills: 'React, Node.js',
+      experience: '3 years',
+      available_hours: 40,
+      approved: 1
+    })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Admin worker creation failed');
+  return json;
 }
 
 main().catch(err => {

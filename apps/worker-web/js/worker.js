@@ -741,12 +741,70 @@ async function openGroupWorkspace(groupId) {
       </div>
 
       ${tasksHTML}
+      
+      <!-- Secure Workspace Features -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2rem; margin-top:2rem; border-top:1px solid rgba(255,255,255,0.08); padding-top:1.5rem">
+        
+        <!-- Left Column: File Sharing & Voice Messages -->
+        <div class="glass-card" style="padding:1.5rem; background:rgba(15,22,41,0.5)">
+          <h4 style="margin-top:0; color:#a855f7; display:flex; align-items:center; gap:0.5rem">
+            📁 Shared Files &amp; Voice Sync
+          </h4>
+          
+          <!-- File List -->
+          <div id="workspace-files-container" style="max-height:200px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem; background:rgba(0,0,0,0.15); margin-bottom:1rem">
+            <p style="color:var(--text-muted); font-size:0.85rem">Loading files...</p>
+          </div>
+
+          <!-- File Upload Form -->
+          <div style="display:flex; gap:0.5rem; margin-bottom:1rem">
+            <input type="file" id="workspace-file-input" style="display:none" onchange="uploadWorkspaceFile(${g.project_id})">
+            <button class="btn btn-secondary" style="width:auto; font-size:0.8rem; padding:0.4rem 1rem" onclick="document.getElementById('workspace-file-input').click()">📤 Upload &amp; Share File</button>
+            <button id="record-voice-btn" class="btn btn-primary" style="width:auto; font-size:0.8rem; padding:0.4rem 1rem" onclick="toggleVoiceRecording(${g.project_id})">🎤 Record Voice</button>
+          </div>
+        </div>
+
+        <!-- Right Column: Progress & Milestones -->
+        <div class="glass-card" style="padding:1.5rem; background:rgba(15,22,41,0.5)">
+          <h4 style="margin-top:0; color:#a855f7">🏆 Project Milestones</h4>
+          
+          <!-- Milestone List -->
+          <div id="workspace-milestones-container" style="max-height:120px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem; background:rgba(0,0,0,0.15); margin-bottom:1rem">
+            <p style="color:var(--text-muted); font-size:0.85rem">Loading milestones...</p>
+          </div>
+
+          <!-- Progress Logs -->
+          <h4 style="margin-top:1.5rem; color:#a855f7">📈 Progress Update Logs</h4>
+          <div id="workspace-progress-container" style="max-height:120px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem; background:rgba(0,0,0,0.15); margin-bottom:1rem">
+            <p style="color:var(--text-muted); font-size:0.85rem">Loading logs...</p>
+          </div>
+
+          <!-- Progress Form -->
+          <form id="workspace-progress-form" style="display:flex; flex-direction:column; gap:0.5rem" onsubmit="submitWorkspaceProgress(event, ${g.project_id})">
+            <input type="text" id="workspace-progress-text" placeholder="Explain what you accomplished..." required style="background:rgba(0,0,0,0.2); border:1px solid var(--border-color); color:#fff; padding:0.4rem 0.8rem; border-radius:6px; font-size:0.85rem" />
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem">
+              <div style="flex:1; display:flex; align-items:center; gap:0.5rem">
+                <label for="workspace-progress-percent" style="font-size:0.8rem; color:var(--text-muted)">Progress %:</label>
+                <input type="number" id="workspace-progress-percent" min="0" max="100" required placeholder="0-100" style="width:70px; background:rgba(0,0,0,0.2); border:1px solid var(--border-color); color:#fff; padding:0.3rem; border-radius:6px; font-size:0.85rem" />
+              </div>
+              <button type="submit" class="btn btn-secondary" style="width:auto; font-size:0.8rem; padding:0.4rem 1.25rem">Log Update</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
       ${chatHTML}
     </div>
   `;
 
   document.getElementById('worker-assigned-board-panel').style.display = 'none';
   document.getElementById('worker-group-workspace-panel').style.display = 'block';
+
+  // Load workspace data
+  loadWorkspaceFiles(g.project_id);
+  loadWorkspaceMilestones(g.project_id);
+  loadWorkspaceProgress(g.project_id);
 
   // Load chat messages history
   loadGroupChatHistory(groupId);
@@ -1596,4 +1654,235 @@ async function loadLegalHistory() {
 
 function escapeHTML(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+// ==========================================
+// SECURE WORKSPACE HELPER FUNCTIONS
+// ==========================================
+
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+async function toggleVoiceRecording(projectId) {
+  const btn = document.getElementById('record-voice-btn');
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const file = new File([audioBlob], `voice_message_${Date.now()}.wav`, { type: 'audio/wav' });
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('file_type', 'voice');
+        
+        try {
+          const res = await fetch(`/api/projects/${projectId}/files`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${getToken()}` },
+            body: formData
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error);
+          showToast('Voice message uploaded successfully!', 'success');
+          loadWorkspaceFiles(projectId);
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+      
+      mediaRecorder.start();
+      isRecording = true;
+      btn.innerText = '🛑 Stop Recording';
+      btn.style.background = '#ef4444';
+      showToast('Recording started...', 'info');
+    } catch (err) {
+      showToast('Microphone access denied or not available.', 'error');
+    }
+  } else {
+    mediaRecorder.stop();
+    isRecording = false;
+    btn.innerText = '🎤 Record Voice';
+    btn.style.background = 'var(--color-primary)';
+  }
+}
+
+async function loadWorkspaceFiles(projectId) {
+  const container = document.getElementById('workspace-files-container');
+  try {
+    const res = await fetch(`/api/projects/${projectId}/files`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    container.innerHTML = '';
+    const files = data.files || [];
+    if (files.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic">No files shared yet.</p>';
+    } else {
+      files.forEach(f => {
+        const item = document.createElement('div');
+        item.style.padding = '0.5rem';
+        item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        item.style.alignItems = 'center';
+        
+        const isVoice = f.file_type === 'voice';
+        const icon = isVoice ? '🎤' : '📁';
+        const displayLink = isVoice 
+          ? `<audio controls src="${f.file_url}" style="height:30px; max-width:180px;"></audio>`
+          : `<a href="${f.file_url}" target="_blank" style="color:var(--color-primary); font-size:0.85rem; text-decoration:none;">Download</a>`;
+
+        item.innerHTML = `
+          <div>
+            <span style="font-size:0.9rem; color:#fff">${icon} ${f.file_name}</span>
+            <span style="font-size:0.7rem; color:var(--text-muted); display:block;">Shared by ${f.uploader_name}</span>
+          </div>
+          <div>${displayLink}</div>
+        `;
+        container.appendChild(item);
+      });
+    }
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444; font-size:0.8rem">Error loading files: ${err.message}</p>`;
+  }
+}
+
+async function uploadWorkspaceFile(projectId) {
+  const fileInput = document.getElementById('workspace-file-input');
+  if (fileInput.files.length === 0) {
+    showToast('Please select a file to share', 'error');
+    return;
+  }
+  const file = fileInput.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('file_type', 'file');
+
+  try {
+    const res = await fetch(`/api/projects/${projectId}/files`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast('File shared successfully!', 'success');
+    fileInput.value = '';
+    loadWorkspaceFiles(projectId);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadWorkspaceMilestones(projectId) {
+  const container = document.getElementById('workspace-milestones-container');
+  try {
+    const res = await fetch(`/api/projects/${projectId}/milestones`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    container.innerHTML = '';
+    const milestones = data.milestones || [];
+    if (milestones.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic">No milestones defined yet.</p>';
+    } else {
+      milestones.forEach(m => {
+        const item = document.createElement('div');
+        item.style.padding = '0.5rem';
+        item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        item.style.alignItems = 'center';
+
+        const statusColor = m.status === 'completed' ? '#10b981' : '#f59e0b';
+        item.innerHTML = `
+          <div>
+            <strong style="color:#fff; font-size:0.85rem">${m.title}</strong>
+            <span style="font-size:0.75rem; color:var(--text-muted); display:block">${m.description || 'No description'}</span>
+          </div>
+          <div style="text-align:right">
+            <span class="status-badge" style="font-size:0.65rem; padding:0.1rem 0.3rem; border-color:${statusColor}; color:${statusColor}; background:transparent">${m.status}</span>
+            <span style="font-size:0.7rem; color:var(--text-muted); display:block; margin-top:0.2rem">Due: ${m.deadline || 'N/A'}</span>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444; font-size:0.8rem">Error loading milestones: ${err.message}</p>`;
+  }
+}
+
+async function loadWorkspaceProgress(projectId) {
+  const container = document.getElementById('workspace-progress-container');
+  try {
+    const res = await fetch(`/api/projects/${projectId}/progress`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    container.innerHTML = '';
+    const updates = data.updates || [];
+    if (updates.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic">No progress logs submitted yet.</p>';
+    } else {
+      updates.forEach(u => {
+        const item = document.createElement('div');
+        item.style.padding = '0.5rem';
+        item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.2rem">
+            <span style="font-size:0.8rem; color:#fff; font-weight:600">${u.worker_name} logged ${u.progress_percentage}%</span>
+            <span style="font-size:0.7rem; color:var(--text-muted)">${new Date(u.created_at).toLocaleString()}</span>
+          </div>
+          <p style="margin:0; font-size:0.8rem; color:var(--text-secondary)">${u.update_text}</p>
+        `;
+        container.appendChild(item);
+      });
+    }
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444; font-size:0.8rem">Error loading progress updates: ${err.message}</p>`;
+  }
+}
+
+async function submitWorkspaceProgress(event, projectId) {
+  event.preventDefault();
+  const textInput = document.getElementById('workspace-progress-text');
+  const percentInput = document.getElementById('workspace-progress-percent');
+  const update_text = textInput.value;
+  const progress_percentage = percentInput.value;
+
+  try {
+    const res = await fetch(`/api/projects/${projectId}/progress`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({ update_text, progress_percentage })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast('Progress update logged successfully!', 'success');
+    textInput.value = '';
+    loadWorkspaceProgress(projectId);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }

@@ -19,6 +19,10 @@
       ],
       "rewrites": [
         {
+          "source": "/activate",
+          "destination": "/activate.html"
+        },
+        {
           "source": "/",
           "destination": "/login.html"
         },

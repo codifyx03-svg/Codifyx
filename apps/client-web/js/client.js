@@ -477,7 +477,16 @@ async function viewProjectDetails(projectId) {
       tasksHTML += `</div>`;
     }
 
-    modalBody.innerHTML = tasksHTML;
+    let workspaceBtn = '';
+    if (project.group_id) {
+      workspaceBtn = `
+        <div style="margin-top:1.5rem; text-align:center">
+          <button class="btn btn-primary" style="width:auto; padding:0.6rem 1.5rem" onclick="openClientWorkspace(${project.id}, ${project.group_id})">💬 Open Secure Project Workspace</button>
+        </div>
+      `;
+    }
+
+    modalBody.innerHTML = tasksHTML + workspaceBtn;
 
   } catch (err) {
     modalBody.innerHTML = `<p style="color:#ef4444">${err.message}</p>`;
@@ -1090,3 +1099,339 @@ document.getElementById('client-budget-revision-form').addEventListener('submit'
     showToast(err.message, 'error');
   }
 });
+
+// ==========================================
+// SECURE WORKSPACE CLIENT-SIDE CONTROLLERS
+// ==========================================
+
+async function openClientWorkspace(projectId, groupId) {
+  const modalBody = document.getElementById('modal-project-body');
+  
+  modalBody.innerHTML = `
+    <button class="btn btn-secondary" onclick="viewProjectDetails(${projectId})" style="margin-bottom: 1.5rem; width: auto;">&larr; Back to Tasks</button>
+    
+    <div class="glass-card" style="padding: 1.5rem; background: rgba(15,22,41,0.7); border: 1px solid rgba(255,255,255,0.08);">
+      <h3 style="margin-top:0; color:#fff">Project Workspace</h3>
+      
+      <!-- Secure Workspace Features Grid -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2rem; margin-top:1.5rem;">
+        
+        <!-- Left Column: File Sharing & Voice Sync -->
+        <div class="glass-card" style="padding:1.25rem; background:rgba(15,22,41,0.5)">
+          <h4 style="margin-top:0; color:#a855f7; display:flex; align-items:center; gap:0.5rem">
+            📁 Shared Files &amp; Voice Sync
+          </h4>
+          
+          <!-- File List -->
+          <div id="workspace-files-container" style="max-height:180px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem; background:rgba(0,0,0,0.15); margin-bottom:1rem">
+            <p style="color:var(--text-muted); font-size:0.85rem">Loading files...</p>
+          </div>
+
+          <!-- File Upload Form -->
+          <div style="display:flex; gap:0.5rem; margin-bottom:1rem">
+            <input type="file" id="workspace-file-input" style="display:none" onchange="uploadWorkspaceFileClient(${projectId})">
+            <button class="btn btn-secondary" style="width:auto; font-size:0.8rem; padding:0.4rem 1rem" onclick="document.getElementById('workspace-file-input').click()">📤 Share File</button>
+          </div>
+        </div>
+
+        <!-- Right Column: Milestones & Progress Logs -->
+        <div class="glass-card" style="padding:1.25rem; background:rgba(15,22,41,0.5)">
+          <h4 style="margin-top:0; color:#a855f7">🏆 Milestones</h4>
+          <div id="workspace-milestones-container" style="max-height:100px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem; background:rgba(0,0,0,0.15); margin-bottom:1rem">
+            <p style="color:var(--text-muted); font-size:0.85rem">Loading milestones...</p>
+          </div>
+          
+          <!-- Client Milestone Creation Form -->
+          <form id="client-milestone-form" style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem" onsubmit="createWorkspaceMilestoneClient(event, ${projectId})">
+            <input type="text" id="milestone-title" placeholder="Milestone Title" required style="background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:#fff; padding:0.35rem 0.75rem; border-radius:6px; font-size:0.85rem">
+            <input type="text" id="milestone-desc" placeholder="Description" style="background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:#fff; padding:0.35rem 0.75rem; border-radius:6px; font-size:0.85rem">
+            <div style="display:flex; gap:0.5rem">
+              <input type="number" id="milestone-amount" placeholder="Amount" style="flex:1; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:#fff; padding:0.35rem; border-radius:6px; font-size:0.85rem">
+              <input type="date" id="milestone-deadline" style="flex:1; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:#fff; padding:0.35rem; border-radius:6px; font-size:0.85rem">
+            </div>
+            <button type="submit" class="btn btn-secondary" style="width:auto; font-size:0.8rem; padding:0.4rem 1.25rem">Add Milestone</button>
+          </form>
+
+          <h4 style="margin-top:1rem; color:#a855f7">📈 Progress Updates Log</h4>
+          <div id="workspace-progress-container" style="max-height:100px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem; background:rgba(0,0,0,0.15)">
+            <p style="color:var(--text-muted); font-size:0.85rem">Loading logs...</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sync Chat Section -->
+      <div class="glass-card" style="margin-top:1.5rem; padding:1.25rem; display:flex; flex-direction:column; gap:0.75rem; background:rgba(15,22,41,0.5)">
+        <h4 style="margin:0; color:#a855f7">💬 Project Group Chat</h4>
+        <div id="group-chat-messages" style="height:180px; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px; padding:0.75rem; background:rgba(0,0,0,0.25); display:flex; flex-direction:column; gap:0.5rem;">
+          <p style="color:var(--text-muted); font-size:0.85rem">Loading conversation...</p>
+        </div>
+        <form id="group-chat-form" style="display:flex; gap:0.5rem" onsubmit="sendGroupChatMessageClient(event, ${groupId})">
+          <input type="text" id="group-chat-input" placeholder="Type a message to the team..." required style="flex:1; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:#fff; padding:0.4rem 0.8rem; border-radius:6px; font-size:0.85rem" />
+          <button type="submit" class="btn btn-primary" style="width:auto; padding:0.4rem 1.25rem; font-size:0.85rem">Send</button>
+        </form>
+      </div>
+
+    </div>
+  `;
+
+  // Trigger workspace data loads
+  loadWorkspaceFilesClient(projectId);
+  loadWorkspaceMilestonesClient(projectId);
+  loadWorkspaceProgressClient(projectId);
+  loadGroupChatHistoryClient(groupId);
+}
+
+async function loadGroupChatHistoryClient(groupId) {
+  const container = document.getElementById('group-chat-messages');
+  try {
+    const response = await fetch(`/api/messages/group/${groupId}`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+
+    container.innerHTML = '';
+    const messages = data.history || [];
+
+    if (messages.length === 0) {
+      container.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; font-style:italic; text-align:center; margin-top:1.5rem">No messages in this workspace channel yet.</p>`;
+    } else {
+      messages.forEach(m => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '0.5rem';
+        div.style.padding = '0.4rem 0.75rem';
+        div.style.borderRadius = '6px';
+        div.style.background = m.sender_role === 'client' ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.03)';
+        div.style.border = m.sender_role === 'client' ? '1px solid rgba(99,102,241,0.2)' : '1px solid rgba(255,255,255,0.05)';
+        
+        div.innerHTML = `
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem">
+            <strong style="color:${m.sender_role === 'client' ? 'var(--color-primary)' : '#fff'}">${m.sender_name} (${m.sender_role})</strong>
+            <span style="color:var(--text-muted)">${new Date(m.created_at).toLocaleTimeString()}</span>
+          </div>
+          <div style="font-size:0.85rem; color:var(--text-secondary); word-break:break-all">${m.message}</div>
+        `;
+        container.appendChild(div);
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444; font-size:0.8rem">Failed to load chat history: ${err.message}</p>`;
+  }
+}
+
+async function sendGroupChatMessageClient(event, groupId) {
+  event.preventDefault();
+  const input = document.getElementById('group-chat-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  try {
+    const response = await fetch(`/api/messages/group/${groupId}/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({ message })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    
+    input.value = '';
+    loadGroupChatHistoryClient(groupId);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadWorkspaceFilesClient(projectId) {
+  const container = document.getElementById('workspace-files-container');
+  try {
+    const res = await fetch(`/api/projects/${projectId}/files`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    container.innerHTML = '';
+    const files = data.files || [];
+    if (files.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic">No files shared yet.</p>';
+    } else {
+      files.forEach(f => {
+        const item = document.createElement('div');
+        item.style.padding = '0.4rem';
+        item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        item.style.alignItems = 'center';
+        
+        const isVoice = f.file_type === 'voice';
+        const icon = isVoice ? '🎤' : '📁';
+        const displayLink = isVoice 
+          ? `<audio controls src="${f.file_url}" style="height:25px; max-width:140px;"></audio>`
+          : `<a href="${f.file_url}" target="_blank" style="color:var(--color-primary); font-size:0.8rem; text-decoration:none;">Download</a>`;
+
+        item.innerHTML = `
+          <div>
+            <span style="font-size:0.85rem; color:#fff">${icon} ${f.file_name}</span>
+            <span style="font-size:0.65rem; color:var(--text-muted); display:block;">Shared by ${f.uploader_name}</span>
+          </div>
+          <div>${displayLink}</div>
+        `;
+        container.appendChild(item);
+      });
+    }
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444; font-size:0.8rem">Error: ${err.message}</p>`;
+  }
+}
+
+async function uploadWorkspaceFileClient(projectId) {
+  const fileInput = document.getElementById('workspace-file-input');
+  if (fileInput.files.length === 0) return;
+  const file = fileInput.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('file_type', 'file');
+
+  try {
+    const res = await fetch(`/api/projects/${projectId}/files`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast('File shared successfully!', 'success');
+    fileInput.value = '';
+    loadWorkspaceFilesClient(projectId);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadWorkspaceMilestonesClient(projectId) {
+  const container = document.getElementById('workspace-milestones-container');
+  try {
+    const res = await fetch(`/api/projects/${projectId}/milestones`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    container.innerHTML = '';
+    const milestones = data.milestones || [];
+    if (milestones.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic">No milestones defined yet.</p>';
+    } else {
+      milestones.forEach(m => {
+        const item = document.createElement('div');
+        item.style.padding = '0.4rem';
+        item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        item.style.alignItems = 'center';
+
+        const statusColor = m.status === 'completed' ? '#10b981' : '#f59e0b';
+        const completeBtn = m.status === 'pending' 
+          ? `<button class="btn btn-secondary" style="padding:0.15rem 0.4rem; font-size:0.65rem; width:auto;" onclick="completeWorkspaceMilestoneClient(${projectId}, ${m.id})">✓ Complete</button>`
+          : '';
+
+        item.innerHTML = `
+          <div>
+            <strong style="color:#fff; font-size:0.8rem">${m.title}</strong>
+            <span style="font-size:0.7rem; color:var(--text-muted); display:block">${m.description || 'No description'}</span>
+          </div>
+          <div style="text-align:right">
+            <span class="status-badge" style="font-size:0.6rem; padding:0.05rem 0.2rem; border-color:${statusColor}; color:${statusColor}; background:transparent">${m.status}</span>
+            <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin:0.1rem 0">${m.deadline || 'N/A'}</span>
+            ${completeBtn}
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444; font-size:0.8rem">Error: ${err.message}</p>`;
+  }
+}
+
+async function createWorkspaceMilestoneClient(event, projectId) {
+  event.preventDefault();
+  const title = document.getElementById('milestone-title').value;
+  const description = document.getElementById('milestone-desc').value;
+  const amount = document.getElementById('milestone-amount').value;
+  const deadline = document.getElementById('milestone-deadline').value;
+
+  try {
+    const res = await fetch(`/api/projects/${projectId}/milestones`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({ title, description, amount, deadline })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast('Milestone created successfully!', 'success');
+    document.getElementById('client-milestone-form').reset();
+    loadWorkspaceMilestonesClient(projectId);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function completeWorkspaceMilestoneClient(projectId, milestoneId) {
+  try {
+    const res = await fetch(`/api/projects/${projectId}/milestones/${milestoneId}/complete`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast('Milestone marked completed!', 'success');
+    loadWorkspaceMilestonesClient(projectId);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadWorkspaceProgressClient(projectId) {
+  const container = document.getElementById('workspace-progress-container');
+  try {
+    const res = await fetch(`/api/projects/${projectId}/progress`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    container.innerHTML = '';
+    const updates = data.updates || [];
+    if (updates.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic">No progress logs submitted yet.</p>';
+    } else {
+      updates.forEach(u => {
+        const item = document.createElement('div');
+        item.style.padding = '0.4rem';
+        item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.15rem">
+            <span style="font-size:0.75rem; color:#fff; font-weight:600">${u.worker_name} logged ${u.progress_percentage}%</span>
+            <span style="font-size:0.65rem; color:var(--text-muted)">${new Date(u.created_at).toLocaleDateString()}</span>
+          </div>
+          <p style="margin:0; font-size:0.75rem; color:var(--text-secondary)">${u.update_text}</p>
+        `;
+        container.appendChild(item);
+      });
+    }
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444; font-size:0.8rem">Error: ${err.message}</p>`;
+  }
+}

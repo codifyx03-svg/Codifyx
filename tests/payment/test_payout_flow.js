@@ -30,54 +30,27 @@ async function main() {
   
   let workerToken, workerId;
   try {
-    // 1. Register worker
-    const registerRes = await fetch(`${publicBase}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: workerEmail,
-        name: 'Payout Worker',
-        role: 'worker',
-        password: workerPassword,
-        accepted_legal: true
-      })
-    });
-    const registerData = await registerRes.json();
-    console.log('✅ Worker registered:', registerData.message);
-
-    // Get OTP from registration response
-    const otp = registerData.verificationCode;
-    
-    // Verify worker
-    const verifyRes = await fetch(`${publicBase}/api/auth/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: workerEmail, otpCode: otp })
-    });
-    const verifyData = await verifyRes.json();
-    console.log('✅ Worker OTP verified:', verifyData.message);
-
-    // 2. Admin approve worker
-    // List pending workers first
-    const listRes = await fetch(`${adminBase}/api/admin/workers/pending`, {
-      headers: { 'Authorization': `Bearer ${adminToken}` }
-    });
-    const listData = await listRes.json();
-    const found = listData.workers.find(w => w.email === workerEmail);
-    if (!found) throw new Error('Worker not found in pending list');
-    workerId = found.id;
-
-    // Call approve endpoint with action: 'approve'
-    const approveRes = await fetch(`${adminBase}/api/admin/workers/${workerId}/approve`, {
+    // 1. Create worker via Admin API
+    const createRes = await fetch(`${adminBase}/api/admin/workers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${adminToken}`
       },
-      body: JSON.stringify({ action: 'approve' })
+      body: JSON.stringify({
+        name: 'Payout Worker',
+        email: workerEmail,
+        password: workerPassword,
+        skills: 'Testing',
+        experience: '1 year',
+        available_hours: 40,
+        approved: 1
+      })
     });
-    const approveData = await approveRes.json();
-    console.log('✅ Worker approved by admin:', approveData.message);
+    const createData = await createRes.json();
+    if (!createData.success) throw new Error(createData.error || 'Worker creation failed');
+    workerId = createData.workerId;
+    console.log('✅ Worker created via Admin API:', workerId);
 
     // 3. Worker login
     const loginRes = await fetch(`${publicBase}/api/auth/login`, {
@@ -104,15 +77,16 @@ async function main() {
         email: clientEmail,
         name: 'Payout Client',
         role: 'client',
-        password: 'Password1!'
+        password: 'Password1!',
+        accepted_legal: true
       })
     });
     const clientData = await clientRes.json();
     
-    await fetch(`${publicBase}/api/auth/verify-otp`, {
+    await fetch(`${publicBase}/api/auth/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: clientEmail, otpCode: clientData.verificationCode })
+      body: JSON.stringify({ email: clientEmail, code: clientData.verificationCode })
     });
 
     const clientLoginRes = await fetch(`${publicBase}/api/auth/login`, {
@@ -205,6 +179,18 @@ async function main() {
     });
     let walletData = await walletRes.json();
     console.log('💵 Initial Worker Wallet Response:', JSON.stringify(walletData));
+
+    // Client approves delivery before payment can be released
+    const clientApproveRes = await fetch(`${publicBase}/api/projects/${projectId}/tasks/${taskId}/approve-delivery`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${clientToken}`
+      },
+      body: JSON.stringify({ note: 'Great job!' })
+    });
+    const clientApproveData = await clientApproveRes.json();
+    console.log('✅ Client approved delivery Response:', JSON.stringify(clientApproveData));
 
     // Admin approves payment / releases payment
     const approvePayRes = await fetch(`${adminBase}/api/admin/tasks/${taskId}/approve-payment`, {

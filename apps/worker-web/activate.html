@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activate Account - codifyx</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Premium micro-animations and typography adjustments */
+    .form-group textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 0.6rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      border-radius: 4px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    .form-group textarea:focus {
+      border-color: var(--color-primary);
+      outline: none;
+    }
+    .file-upload-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+    }
+    .file-upload-btn {
+      display: block;
+      width: 100%;
+      padding: 0.6rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px dashed var(--border-color);
+      color: var(--text-secondary);
+      text-align: center;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .file-upload-btn:hover {
+      border-color: var(--color-primary);
+      background: rgba(124, 58, 237, 0.1);
+      color: #fff;
+    }
+    .file-upload-wrapper input[type=file] {
+      font-size: 100px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .grid-form-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 600px) {
+      .grid-form-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow-orb orb-1"></div>
+  <div class="bg-glow-orb orb-2"></div>
+
+  <div class="auth-wrapper" style="padding: 40px 15px;">
+    <!-- Loading State -->
+    <div class="glass-card auth-card" id="loading-card" style="max-width: 500px; text-align: center; padding: 3rem;">
+      <div class="auth-header">
+        <h2 class="auth-title">Verifying Invitation</h2>
+        <p class="auth-subtitle">Checking security token validity...</p>
+      </div>
+      <div style="margin: 2rem auto; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top-color: var(--color-primary); animation: spin 1s ease infinite;"></div>
+    </div>
+
+    <!-- Error State -->
+    <div class="glass-card auth-card" id="error-card" style="max-width: 500px; text-align: center; padding: 3rem; display: none;">
+      <div class="auth-header">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+        <h2 class="auth-title">Invalid Invitation</h2>
+        <p class="auth-subtitle" id="error-message">This invitation link is invalid, expired, or has already been used.</p>
+      </div>
+      <a href="login.html" class="btn btn-primary" style="margin-top: 2rem; display: inline-block; width: auto; padding: 0.6rem 1.5rem; text-decoration: none;">Back to Login</a>
+    </div>
+
+    <!-- Activation Form State -->
+    <div class="glass-card auth-card" id="activation-card" style="max-width: 650px; padding: 2.5rem; display: none;">
+      <div class="auth-header">
+        <a href="index.html" class="auth-logo">
+          <img src="/uploads/logo.png" alt="codifyx Logo" class="logo-icon" style="width:30px; height:30px"/>
+          codifyx
+        </a>
+        <h2 class="auth-title">Complete Your Profile</h2>
+        <p class="auth-subtitle">Welcome, <span id="worker-name-display" style="color: #fff; font-weight: bold;">Developer</span>. Set up your credentials to activate your account.</p>
+      </div>
+
+      <form id="activation-form" enctype="multipart/form-data">
+        <input type="hidden" id="token" name="token">
+
+        <!-- Contact & Profile Pic Row -->
+        <div class="grid-form-2">
+          <div class="form-group">
+            <label for="phone">Phone Number <span style="color:#ef4444">*</span></label>
+            <input type="text" id="phone" name="phone" required placeholder="+91 99887 76655">
+          </div>
+          <div class="form-group">
+            <label for="profile_picture">Profile Picture (Optional)</label>
+            <div class="file-upload-wrapper">
+              <label class="file-upload-btn" id="pfp-label">
+                <span>📁 Upload Image</span>
+                <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills & Experience Row -->
+        <div class="grid-form-2">
+          <div class="form-group">
+            <label for="skills">Skills <span style="color:#ef4444">*</span> (comma-separated)</label>
+            <input type="text" id="skills" name="skills" required placeholder="React, Node.js, SQLite">
+          </div>
+          <div class="form-group">
+            <label for="experience">Experience Level <span style="color:#ef4444">*</span></label>
+            <input type="text" id="experience" name="experience" required placeholder="e.g. 3 years, Senior Dev">
+          </div>
+        </div>
+
+        <!-- Portfolio & Github -->
+        <div class="form-group">
+          <label for="portfolio_url">Portfolio or GitHub Link (Optional)</label>
+          <input type="url" id="portfolio_url" name="portfolio_url" placeholder="https://github.com/username">
+        </div>
+
+        <!-- Bio -->
+        <div class="form-group">
+          <label for="bio">Short Bio (Optional)</label>
+          <textarea id="bio" name="bio" placeholder="Write a short summary about your professional background..."></textarea>
+        </div>
+
+        <!-- Password Inputs -->
+        <div class="grid-form-2">
+          <div class="form-group">
+            <label for="password">Create Password <span style="color:#ef4444">*</span></label>
+            <input type="password" id="password" name="password" required placeholder="••••••••" minlength="8">
+          </div>
+          <div class="form-group">
+            <label for="confirm_password">Confirm Password <span style="color:#ef4444">*</span></label>
+            <input type="password" id="confirm_password" name="confirm_password" required placeholder="••••••••" minlength="8">
+          </div>
+        </div>
+
+        <!-- Terms Agreement -->
+        <div class="form-group" style="margin-top: 0.5rem;">
+          <label class="checkbox-label" style="display:flex; align-items:center; gap:0.75rem; font-size:0.9rem;">
+            <input type="checkbox" id="accepted_legal" name="accepted_legal" required />
+            <span>I agree to the <a href="legal.html" target="_blank" style="color:var(--color-primary)">Terms of Service</a> and <a href="legal.html" target="_blank" style="color:var(--color-primary)">Privacy Policy</a>.</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary auth-btn" style="margin-top: 1rem;">Activate & Log In</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Animation spinner keyframes
+    const style = document.createElement('style');
+    style.innerHTML = `@keyframes spin { to { transform: rotate(360deg); } }`;
+    document.head.appendChild(style);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    // Page state elements
+    const loadingCard = document.getElementById('loading-card');
+    const errorCard = document.getElementById('error-card');
+    const errorMsg = document.getElementById('error-message');
+    const activationCard = document.getElementById('activation-card');
+    const workerNameDisplay = document.getElementById('worker-name-display');
+
+    // Verify token on load
+    async function verifyToken() {
+      if (!token) {
+        showError('No security activation token was provided in the link.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/auth/invitation/verify?token=${token}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Token verification failed.');
+        }
+
+        // Show form state
+        document.getElementById('token').value = token;
+        workerNameDisplay.innerText = data.name;
+        loadingCard.style.display = 'none';
+        activationCard.style.display = 'block';
+
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    function showError(message) {
+      errorMsg.innerText = message;
+      loadingCard.style.display = 'none';
+      errorCard.style.display = 'block';
+    }
+
+    // Profile picture label updates
+    const pfpInput = document.getElementById('profile_picture');
+    const pfpLabel = document.getElementById('pfp-label').querySelector('span');
+    pfpInput.addEventListener('change', () => {
+      if (pfpInput.files.length > 0) {
+        pfpLabel.innerText = pfpInput.files[0].name;
+        document.getElementById('pfp-label').style.color = '#10b981';
+      }
+    });
+
+    // Form Submission
+    const form = document.getElementById('activation-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm_password').value;
+
+      if (password !== confirmPassword) {
+        showToast('Password confirmation does not match.', 'error');
+        return;
+      }
+
+      // Strong password validation check
+      const passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+      if (!passwordStrengthRegex.test(password)) {
+        showToast('Password must be at least 8 characters and include uppercase, lowercase, number, and special character.', 'error');
+        return;
+      }
+
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch('/api/auth/invitation/activate', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Activation failed.');
+        }
+
+        showToast('Account activated successfully! Redirecting...', 'success');
+        
+        // Clear any leftover storage credentials
+        try {
+          localStorage.removeItem('df_token');
+          localStorage.removeItem('df_user');
+        } catch(e) {}
+
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1500);
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // Initialize
+    verifyToken();
+  </script>
+</body>
+</html>

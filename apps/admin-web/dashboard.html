@@ -141,27 +141,30 @@
 
       <!-- VIEW 2: MANAGE WORKERS -->
       <section id="view-manage-workers" class="dashboard-view">
-        <h3>Worker Registrations</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+          <h3 style="margin:0">Workforce Invitation & Onboarding</h3>
+          <button class="btn btn-primary" style="width:auto; padding:0.5rem 1.25rem" onclick="openCreateWorkerModal()">Invite Worker</button>
+        </div>
         <div class="table-wrapper">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
-            <h4 style="margin:0">Pending Approvals</h4>
-            <input id="pending-worker-search" type="text" placeholder="Search pending workers..." class="search-input" style="max-width:320px; width:100%;" />
+            <h4 style="margin:0">Pending Invitations</h4>
+            <input id="pending-worker-search" type="text" placeholder="Search pending invitations..." class="search-input" style="max-width:320px; width:100%;" />
           </div>
           <table>
             <thead>
-              <tr><th>Name</th><th>Email</th><th>Skills</th><th>Resume</th><th>Actions</th></tr>
+              <tr><th>Full Name</th><th>Email Address</th><th>Status</th><th>Expires In</th><th>Actions</th></tr>
             </thead>
             <tbody id="pending-workers-table-body"><tr><td colspan="5" style="text-align:center;">Loading...</td></tr></tbody>
           </table>
         </div>
         <div class="table-wrapper" style="margin-top:1rem;">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
-            <h4 style="margin:0">Approved Workers</h4>
-            <input id="vetted-worker-search" type="text" placeholder="Search approved workers..." class="search-input" style="max-width:320px; width:100%;" />
+            <h4 style="margin:0">Active & Suspended Workers</h4>
+            <input id="vetted-worker-search" type="text" placeholder="Search workers..." class="search-input" style="max-width:320px; width:100%;" />
           </div>
           <table>
             <thead>
-              <tr><th>#</th><th>Name</th><th>Email</th><th>Skills</th><th>Experience</th><th>Action</th></tr>
+              <tr><th>#</th><th>Name</th><th>Email</th><th>Skills</th><th>Experience</th><th>Actions</th></tr>
             </thead>
             <tbody id="vetted-workers-table-body"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
           </table>
@@ -584,6 +587,69 @@
           <button class="btn btn-secondary" onclick="closeReviewModal()">Close</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Worker Editor Modal -->
+  <div class="modal-overlay" id="worker-editor-modal">
+    <div class="modal-container" style="max-width: 480px">
+      <div class="modal-header">
+        <h3 id="worker-editor-title">Create Worker Account</h3>
+        <button class="modal-close" onclick="closeWorkerEditorModal()">&times;</button>
+      </div>
+      <form id="worker-editor-form" style="font-size:0.95rem" onsubmit="saveWorkerDetails(event)">
+        <input type="hidden" id="editor-worker-id">
+        <div class="form-group" style="margin-bottom:1rem">
+          <label for="editor-worker-name">Full Name</label>
+          <input type="text" id="editor-worker-name" required placeholder="John Doe">
+        </div>
+        <div class="form-group" style="margin-bottom:1rem">
+          <label for="editor-worker-email">Email Address</label>
+          <input type="email" id="editor-worker-email" required placeholder="john@company.com">
+        </div>
+        <div class="form-group" style="margin-bottom:1rem" id="editor-worker-password-group">
+          <label for="editor-worker-password" id="editor-worker-password-label">Password</label>
+          <input type="password" id="editor-worker-password" required placeholder="••••••••" minlength="8">
+        </div>
+        <div class="form-group" style="margin-bottom:1rem" id="editor-worker-skills-group">
+          <label for="editor-worker-skills">Skills (comma-separated)</label>
+          <input type="text" id="editor-worker-skills" placeholder="React, Node.js, SQLite">
+        </div>
+        <div class="form-group" style="margin-bottom:1rem" id="editor-worker-experience-group">
+          <label for="editor-worker-experience">Experience Level</label>
+          <input type="text" id="editor-worker-experience" placeholder="e.g. 3 years, Senior, Mid-level">
+        </div>
+        <div class="form-group" style="margin-bottom:1rem" id="editor-worker-hours-group">
+          <label for="editor-worker-hours">Available Hours / Week</label>
+          <input type="number" id="editor-worker-hours" min="0" max="168" placeholder="e.g. 40">
+        </div>
+        <div class="form-group" style="margin-bottom:1.5rem" id="editor-worker-status-group">
+          <label for="editor-worker-status">Account Status</label>
+          <select id="editor-worker-status" required>
+            <option value="1">Approved / Enabled</option>
+            <option value="0">Disabled / Pending Approval</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary auth-btn" id="worker-editor-submit-btn">Create Worker</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Team Assignment Modal -->
+  <div class="modal-overlay" id="project-team-modal">
+    <div class="modal-container" style="max-width: 500px">
+      <div class="modal-header">
+        <h3>Assign Team Workers</h3>
+        <button class="modal-close" onclick="closeProjectTeamModal()">&times;</button>
+      </div>
+      <form id="project-team-form" style="font-size:0.95rem" onsubmit="saveTeamAssignment(event)">
+        <input type="hidden" id="assign-project-id">
+        <p style="color:var(--text-secondary); margin-bottom:1rem">Select the developers to assign to this project. The first selected developer will be designated as the Team Leader.</p>
+        <div id="assign-workers-checkboxes-container" style="max-height:220px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; padding:0.75rem; background:rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem">
+          <!-- Checkboxes injected here -->
+        </div>
+        <button type="submit" class="btn btn-primary auth-btn">Save Team Assignment</button>
+      </form>
     </div>
   </div>
 

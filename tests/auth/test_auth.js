@@ -8,7 +8,7 @@ const BASE_URL = 'http://localhost:3003';
 async function cleanupTestUsers() {
   const emailList = ['otp-client@example.com', 'otp-worker@example.com'];
   const placeholders = emailList.map(() => '?').join(',');
-  const db = new sqlite3.Database(path.join(__dirname, '..', 'database.db'));
+  const db = new sqlite3.Database(path.join(__dirname, '..', '..', 'database.db'));
 
   return new Promise((resolve, reject) => {
     db.serialize(() => {

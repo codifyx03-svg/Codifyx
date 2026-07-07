@@ -23,7 +23,7 @@
       <div style="text-align: center; margin: 20px 0; color: #6b7280; font-size: 0.9em;">Register with email and password</div>
 
       <!-- Role Selector -->
-      <div class="role-selector">
+      <div class="role-selector" style="display:none">
         <div class="role-tab active" id="tab-client" onclick="selectRole('client')">Client / Employer</div>
         <div class="role-tab" id="tab-worker" onclick="selectRole('worker')">Worker / Developer</div>
       </div>
@@ -82,10 +82,24 @@
   <script src="js/common.js"></script>
   <script>
     // URL role check
-    const urlParams = new URLSearchParams(window.location.search);
-    const initialRole = urlParams.get('role');
-    if (initialRole === 'worker') {
-      selectRole('worker');
+    (() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialRole = urlParams.get('role');
+      if (initialRole === 'worker' || window.location.pathname.includes('/worker/')) {
+        document.querySelector('.auth-card').innerHTML = `
+          <div class="auth-header" style="text-align:center">
+            <h2 class="auth-title">Registration Closed</h2>
+            <p class="auth-subtitle" style="margin-top:1rem; color:var(--text-secondary)">Worker registration is restricted. Developer accounts are managed internally and must be created by an administrator.</p>
+            <a href="login.html" class="btn btn-primary" style="margin-top:1.5rem; display:inline-block; width:auto; text-decoration:none; text-align:center; padding:0.6rem 1.5rem">Back to Login</a>
+          </div>
+        `;
+        window.workerRegistrationBlocked = true;
+      }
+    })();
+
+    if (window.workerRegistrationBlocked) {
+      // Stop execution of remaining initialization
+      throw new Error("Worker registration blocked");
     }
 
     function selectRole(role) {

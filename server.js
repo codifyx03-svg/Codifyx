@@ -42,13 +42,26 @@ mainApp.use('/api', createProxyMiddleware({
   }
 }));
 
+// Proxy uploads requests to the public-api backend where uploads are saved
+mainApp.use('/uploads', createProxyMiddleware({
+  target: 'http://localhost:3003',
+  changeOrigin: true,
+  logLevel: 'debug'
+}));
+
 mainApp.use(express.static(path.join(__dirname, 'apps', 'client-web')));
 mainApp.use('/worker', express.static(path.join(__dirname, 'apps', 'worker-web')));
 mainApp.get('/worker', (_req, res) => res.redirect('/worker/login.html'));
 mainApp.get('/worker/*', (req, res) => {
-  const filePath = path.join(__dirname, 'apps', 'worker-web', req.path.replace(/^\/worker\//, ''));
-  if (fs.existsSync(filePath)) {
+  const rawPath = req.path.replace(/^\/worker\//, '');
+  const filePath = path.join(__dirname, 'apps', 'worker-web', rawPath);
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     return res.sendFile(filePath);
+  }
+  // Try clean URL (.html extension)
+  const cleanPath = filePath + '.html';
+  if (fs.existsSync(cleanPath)) {
+    return res.sendFile(cleanPath);
   }
   return res.sendFile(path.join(__dirname, 'apps', 'worker-web', 'login.html'));
 });
@@ -59,6 +72,13 @@ mainApp.listen(PORT_CLIENT, () => {
 
 // 2. Serve Secure Admin Website (isolated) + proxy /api/* → admin-api:3004
 const adminApp = express();
+
+// Proxy uploads requests for admin to the public-api backend
+adminApp.use('/uploads', createProxyMiddleware({
+  target: 'http://localhost:3003',
+  changeOrigin: true,
+  logLevel: 'debug'
+}));
 
 // Route admin chat-related endpoints to the public API backend so the
 // admin portal can use the shared messaging engine while keeping admin

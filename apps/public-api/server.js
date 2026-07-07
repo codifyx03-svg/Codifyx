@@ -249,7 +249,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Secure Multer storage configuration (Phase 8 — File Upload Hardening)
-const ALLOWED_EXTENSIONS = ['.pdf', '.png', '.jpg', '.jpeg', '.zip', '.docx', '.doc', '.txt'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.png', '.jpg', '.jpeg', '.zip', '.docx', '.doc', '.txt', '.wav', '.mp3'];
 const BLOCKED_EXTENSIONS = ['.exe', '.bat', '.sh', '.js', '.php', '.py', '.rb', '.pl', '.cmd', '.ps1', '.vbs'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -463,6 +463,10 @@ app.post('/api/auth/register',
     }
 
     const { role, email, password, name, company_name, phone, age, skills, experience, available_hours } = req.body;
+
+    if (role === 'worker') {
+      return res.status(403).json({ error: 'Worker registration is disabled. Worker accounts must be created by an administrator.' });
+    }
 
     // Password strength validation
     const passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
@@ -696,6 +700,19 @@ app.post('/api/auth/login',
 
     if (!user) return res.status(400).json({ error: 'Invalid email or password' });
 
+    // Check if worker is suspended, pending, or inactive before password check
+    if (user.role === 'worker') {
+      if (user.invitation_status === 'Pending Invitation') {
+        return res.status(403).json({ error: 'Your account is pending invitation activation. Please check your email for the activation link.' });
+      }
+      if (user.invitation_status === 'Suspended') {
+        return res.status(403).json({ error: 'Your account has been suspended by an administrator.' });
+      }
+      if (user.invitation_status === 'Inactive') {
+        return res.status(403).json({ error: 'Your invitation has been cancelled or deactivated.' });
+      }
+    }
+
     const isMatch = await verifyPassword(password, user.password_hash);
     if (!isMatch) return res.status(400).json({ error: 'Invalid email or password' });
 
@@ -719,7 +736,7 @@ app.post('/api/auth/login',
       });
     }
 
-    // Check if worker needs approval
+    // Check if worker needs approval (legacy approved check)
     if (user.role === 'worker') {
       if (!user.approved) {
         return res.json({
@@ -749,6 +766,150 @@ app.post('/api/auth/login',
     res.status(500).json({ error: 'Login failed' });
   }
 });
+
+// Rate limiter for activation
+const activationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Max 20 activation attempts per 15 minutes
+  message: { error: 'Too many activation attempts, please try again later.' }
+});
+
+// Verify invitation token
+app.get('/api/auth/invitation/verify', activationLimiter, async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ error: 'Token query parameter is required.' });
+    }
+
+    const hashedToken = hashToken(token);
+    const user = await database.get(
+      'SELECT id, name, email, invitation_expiry, invitation_status FROM users WHERE invitation_token = ?',
+      [hashedToken]
+    );
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid invitation token.' });
+    }
+
+    if (user.invitation_status !== 'Pending Invitation') {
+      return res.status(400).json({ error: 'This invitation is no longer active or has already been used.' });
+    }
+
+    const expiry = new Date(user.invitation_expiry);
+    if (expiry < new Date()) {
+      return res.status(400).json({ error: 'This invitation token has expired.' });
+    }
+
+    res.json({ success: true, name: user.name, email: user.email });
+  } catch (error) {
+    console.error('Error verifying invitation:', error);
+    res.status(500).json({ error: 'Failed to verify invitation token.' });
+  }
+});
+
+// Activate worker account
+app.post('/api/auth/invitation/activate',
+  activationLimiter,
+  upload.single('profile_picture'),
+  [
+    body('token').notEmpty().trim(),
+    body('phone').custom(value => {
+      return typeof value === 'string' && /^\+?[0-9\s()\-]{7,25}$/.test(value);
+    }).withMessage('Invalid phone number format'),
+    body('skills').notEmpty().trim().escape(),
+    body('experience').notEmpty().trim().escape(),
+    body('bio').optional().trim().escape(),
+    body('portfolio_url').optional().trim(),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters').trim(),
+    body('confirm_password').custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Password confirmation does not match password');
+      }
+      return true;
+    })
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, details: errors.array() });
+      }
+
+      const { token, phone, skills, experience, bio, portfolio_url, password } = req.body;
+
+      // Password strength validation
+      const passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+      if (!passwordStrengthRegex.test(password)) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters, include uppercase, lowercase, number, and special character' });
+      }
+
+      const hashedToken = hashToken(token);
+      const user = await database.get(
+        'SELECT id, name, email, invitation_expiry, invitation_status FROM users WHERE invitation_token = ?',
+        [hashedToken]
+      );
+
+      if (!user) {
+        return res.status(400).json({ error: 'Invalid invitation token.' });
+      }
+
+      if (user.invitation_status !== 'Pending Invitation') {
+        return res.status(400).json({ error: 'This invitation is no longer active or has already been used.' });
+      }
+
+      const expiry = new Date(user.invitation_expiry);
+      if (expiry < new Date()) {
+        return res.status(400).json({ error: 'This invitation token has expired.' });
+      }
+
+      // Hash password using secure password hashing
+      const passwordHash = await hashPassword(password);
+
+      // Handle profile picture
+      let profilePictureUrl = null;
+      if (req.file) {
+        profilePictureUrl = `/uploads/${req.file.filename}`;
+      }
+
+      // Update user details to activate
+      await database.run(
+        `UPDATE users SET 
+           password_hash = ?,
+           phone = ?,
+           skills = ?,
+           experience = ?,
+           bio = ?,
+           portfolio_url = ?,
+           profile_picture_url = ?,
+           approved = 1,
+           verified = 1,
+           phone_verified = 1,
+           invitation_token = NULL,
+           invitation_expiry = NULL,
+           invitation_status = 'Active',
+           experience_years = ?
+         WHERE id = ?`,
+        [
+          passwordHash,
+          phone,
+          skills,
+          experience,
+          bio || null,
+          portfolio_url || null,
+          profilePictureUrl,
+          parseExperienceYears(experience),
+          user.id
+        ]
+      );
+
+      res.json({ success: true, message: 'Account activated successfully! Proceeding to login.' });
+    } catch (error) {
+      console.error('Error activating worker account:', error);
+      res.status(500).json({ error: 'Failed to activate worker account.' });
+    }
+  }
+);
 
 // Get profile
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
@@ -1624,6 +1785,21 @@ app.get('/api/projects/:id', authenticateToken, async (req, res) => {
     if (req.user.role === 'client' && project.client_id !== req.user.id) {
       return res.status(403).json({ error: 'Unauthorized access to this project' });
     }
+    if (req.user.role === 'worker') {
+      const isAssigned = await database.get(
+        `SELECT 1 FROM group_members gm 
+         JOIN groups g ON gm.group_id = g.id 
+         WHERE g.project_id = ? AND gm.worker_id = ?`,
+        [project.id, req.user.id]
+      );
+      if (!isAssigned) {
+        return res.status(403).json({ error: 'Access denied: You are not assigned to this project' });
+      }
+    }
+
+    // Fetch group_id for workspace
+    const group = await database.get('SELECT id FROM groups WHERE project_id = ?', [project.id]);
+    project.group_id = group ? group.id : null;
 
     const tasks = await database.query(`
       SELECT t.*, u.name as worker_name 
@@ -1650,52 +1826,59 @@ app.get('/api/projects/:id', authenticateToken, async (req, res) => {
 // Get available tasks
 app.get('/api/tasks/available', authenticateToken, authorizeRoles('worker'), async (req, res) => {
   try {
-    // Fetch small tasks (<=5k) - direct assignment
+    // Fetch small tasks (<=5k) - only if assigned to the project workspace
     const smallTasks = await database.query(`
       SELECT t.*, p.title as project_title, p.description as project_description 
       FROM tasks t 
       JOIN projects p ON t.project_id = p.id 
-      WHERE p.status = 'in development' AND t.payment_amount <= 5000 AND t.assigned_worker_id IS NULL AND t.status = 'pending'
+      WHERE (p.status = 'in development' OR p.status = 'team-assigned') 
+        AND t.payment_amount <= 5000 
+        AND t.assigned_worker_id IS NULL 
+        AND t.status = 'pending'
+        AND EXISTS (
+          SELECT 1 FROM group_members gm
+          JOIN groups g ON gm.group_id = g.id
+          WHERE g.project_id = p.id AND gm.worker_id = ?
+        )
       ORDER BY t.payment_amount DESC
-    `);
+    `, [req.user.id]);
 
-    // Fetch big tasks (>5k) for claimable big project work
+    // Fetch big tasks (>5k) for claimable big project work - only if assigned to the project workspace
     const bigTasks = await database.query(`
       SELECT t.*, p.title as project_title, p.description as project_description
       FROM tasks t
       JOIN projects p ON t.project_id = p.id
       WHERE p.project_type = 'big'
-        AND (p.status = 'in development' OR p.status = 'team-assigned')
+        AND p.status = 'team-assigned'
         AND t.assigned_worker_id IS NULL
         AND t.status = 'pending'
         AND t.payment_amount > 5000
+        AND EXISTS (
+          SELECT 1 FROM group_members gm
+          JOIN groups g ON gm.group_id = g.id
+          WHERE g.project_id = p.id AND gm.worker_id = ?
+        )
       ORDER BY t.payment_amount DESC
-    `);
+    `, [req.user.id]);
 
-    // Fetch big projects (>5k) with team formation info
-    // Only show if 'in development' (team not formed) OR if 'team-assigned' AND worker is in the group.
+    // Fetch big projects (>5k) - only if assigned to the project workspace
     const bigProjects = await database.query(`
       SELECT DISTINCT p.id, p.title, p.description, p.budget, p.project_type, p.file_url, p.technologies, p.team_slots,
              (SELECT SUM(payment_amount) FROM tasks WHERE project_id = p.id) as total_payment,
              (SELECT COUNT(*) FROM project_interest WHERE project_id = p.id) as interest_count,
              (SELECT COUNT(*) FROM group_members WHERE group_id IN (SELECT id FROM groups WHERE project_id = p.id)) as team_size,
-             (SELECT COUNT(*) FROM project_interest WHERE project_id = p.id AND worker_id = ?) as worker_interested,
+             0 as worker_interested,
              p.status, p.created_at
       FROM projects p
       WHERE p.project_type = 'big' 
-        AND (
-          p.status = 'in development' 
-          OR (
-            p.status = 'team-assigned' 
-            AND EXISTS (
-              SELECT 1 FROM group_members gm
-              WHERE gm.group_id IN (SELECT id FROM groups WHERE project_id = p.id)
-              AND gm.worker_id = ?
-            )
-          )
+        AND p.status = 'team-assigned'
+        AND EXISTS (
+          SELECT 1 FROM group_members gm
+          JOIN groups g ON gm.group_id = g.id
+          WHERE g.project_id = p.id AND gm.worker_id = ?
         )
       ORDER BY p.budget DESC
-    `, [req.user.id, req.user.id]);
+    `, [req.user.id]);
 
     // Fetch tasks for big projects
     const formattedProjects = await Promise.all(bigProjects.map(async (proj) => {
@@ -2417,6 +2600,13 @@ wss.on('connection', (ws, req) => {
 
         const { receiver_id, message } = payload.data;
         
+        // Block direct messaging between workers and clients
+        const receiver = await database.get('SELECT role FROM users WHERE id = ?', [receiver_id]);
+        if (receiver && authenticatedUser.role !== 'admin' && receiver.role !== 'admin') {
+          ws.send(JSON.stringify({ type: 'error', message: 'Direct messaging is only allowed with admin support channels' }));
+          return;
+        }
+
         // Save to DB
         const result = await database.run(
           'INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)',
@@ -2635,6 +2825,178 @@ app.post('/api/worker/wallet/withdraw', authenticateToken, async (req, res) => {
     res.json({ success: true, message: 'Withdrawal request submitted. Admin will review within 2-3 business days.', requestId: result.requestId });
   } catch (error) {
     res.status(400).json({ error: error.message || 'Failed to submit withdrawal request' });
+  }
+});
+
+// ==========================================
+// SECURE PROJECT WORKSPACE ENDPOINTS
+// ==========================================
+
+// Middleware for Workspace Access Control
+async function checkProjectWorkspaceAccess(req, res, next) {
+  try {
+    const projectId = req.params.projectId || req.params.id;
+    const project = await database.get('SELECT client_id FROM projects WHERE id = ?', [projectId]);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    if (req.user.role === 'admin') {
+      return next();
+    }
+    if (req.user.role === 'client' && project.client_id === req.user.id) {
+      return next();
+    }
+    
+    // Check if worker is assigned to the project group
+    const isAssigned = await database.get(`
+      SELECT 1 FROM group_members gm 
+      JOIN groups g ON gm.group_id = g.id 
+      WHERE g.project_id = ? AND gm.worker_id = ?
+    `, [projectId, req.user.id]);
+    
+    if (isAssigned) {
+      return next();
+    }
+    
+    return res.status(403).json({ error: 'Access denied: You are not assigned to this project workspace' });
+  } catch (error) {
+    console.error('Workspace check error:', error);
+    res.status(500).json({ error: 'Internal server error in workspace validation' });
+  }
+}
+
+// 1. Files & Voice Messages
+app.get('/api/projects/:projectId/files', authenticateToken, checkProjectWorkspaceAccess, async (req, res) => {
+  try {
+    const files = await database.query(
+      'SELECT pf.*, u.name as uploader_name FROM project_files pf JOIN users u ON pf.user_id = u.id WHERE pf.project_id = ? ORDER BY pf.id DESC',
+      [req.params.projectId]
+    );
+    res.json({ success: true, files });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch files' });
+  }
+});
+
+app.post('/api/projects/:projectId/files', authenticateToken, checkProjectWorkspaceAccess, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const { file_type } = req.body; // 'file' or 'voice'
+    
+    const fileUrl = `/uploads/${req.file.filename}`;
+    const result = await database.run(
+      'INSERT INTO project_files (project_id, user_id, file_name, file_url, file_type) VALUES (?, ?, ?, ?, ?)',
+      [req.params.projectId, req.user.id, req.file.originalname, fileUrl, file_type || 'file']
+    );
+    
+    res.json({
+      success: true,
+      file: {
+        id: result.id,
+        project_id: parseInt(req.params.projectId),
+        user_id: req.user.id,
+        file_name: req.file.originalname,
+        file_url: fileUrl,
+        file_type: file_type || 'file',
+        created_at: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('File upload error:', error);
+    res.status(500).json({ error: 'Failed to upload file' });
+  }
+});
+
+// 2. Milestones
+app.get('/api/projects/:projectId/milestones', authenticateToken, checkProjectWorkspaceAccess, async (req, res) => {
+  try {
+    const milestones = await database.query(
+      'SELECT * FROM project_milestones WHERE project_id = ? ORDER BY id ASC',
+      [req.params.projectId]
+    );
+    res.json({ success: true, milestones });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch milestones' });
+  }
+});
+
+app.post('/api/projects/:projectId/milestones', authenticateToken, checkProjectWorkspaceAccess, async (req, res) => {
+  try {
+    const { title, description, amount, deadline } = req.body;
+    if (!title) return res.status(400).json({ error: 'Milestone title is required' });
+    
+    const result = await database.run(
+      'INSERT INTO project_milestones (project_id, title, description, amount, deadline, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [req.params.projectId, title, description || null, amount ? parseFloat(amount) : null, deadline || null, 'pending']
+    );
+    
+    res.json({
+      success: true,
+      milestone: {
+        id: result.id,
+        project_id: parseInt(req.params.projectId),
+        title,
+        description,
+        amount,
+        deadline,
+        status: 'pending'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create milestone' });
+  }
+});
+
+app.post('/api/projects/:projectId/milestones/:milestoneId/complete', authenticateToken, checkProjectWorkspaceAccess, async (req, res) => {
+  try {
+    const { milestoneId, projectId } = req.params;
+    await database.run(
+      "UPDATE project_milestones SET status = 'completed' WHERE id = ? AND project_id = ?",
+      [milestoneId, projectId]
+    );
+    res.json({ success: true, message: 'Milestone marked as completed.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to complete milestone' });
+  }
+});
+
+// 3. Progress Updates
+app.get('/api/projects/:projectId/progress', authenticateToken, checkProjectWorkspaceAccess, async (req, res) => {
+  try {
+    const updates = await database.query(
+      'SELECT pu.*, u.name as worker_name FROM project_progress_updates pu JOIN users u ON pu.worker_id = u.id WHERE pu.project_id = ? ORDER BY pu.id DESC',
+      [req.params.projectId]
+    );
+    res.json({ success: true, updates });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch progress updates' });
+  }
+});
+
+app.post('/api/projects/:projectId/progress', authenticateToken, checkProjectWorkspaceAccess, async (req, res) => {
+  try {
+    const { update_text, progress_percentage } = req.body;
+    if (!update_text || progress_percentage === undefined) {
+      return res.status(400).json({ error: 'Update text and progress percentage are required' });
+    }
+    
+    if (req.user.role !== 'worker') {
+      return res.status(403).json({ error: 'Only assigned workers can post progress updates' });
+    }
+    
+    await database.run(
+      'INSERT INTO project_progress_updates (project_id, worker_id, update_text, progress_percentage) VALUES (?, ?, ?, ?)',
+      [req.params.projectId, req.user.id, update_text, parseInt(progress_percentage)]
+    );
+    
+    await database.run(
+      'UPDATE projects SET progress = ? WHERE id = ?',
+      [parseInt(progress_percentage), req.params.projectId]
+    );
+    
+    res.json({ success: true, message: 'Progress update logged successfully.' });
+  } catch (error) {
+    console.error('Progress log error:', error);
+    res.status(500).json({ error: 'Failed to log progress update' });
   }
 });
 

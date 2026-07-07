@@ -102,15 +102,6 @@ async function testRegisterAndLogin() {
   assert('Client login', r.status === 200 && r.body.token, JSON.stringify(r.body));
   PUBLIC_TOKEN = r.body.token;
 
-  // Register worker
-  r = await request('POST', PUBLIC_BASE, '/api/auth/register', {
-    name: `PayTestWorker_${ts}`,
-    email: `payworker_${ts}@test.com`,
-    password: 'SecurePass123!',
-    role: 'worker'
-  });
-  assert('Worker registered', (r.status === 201 || r.status === 200) && r.body.message, JSON.stringify(r.body));
-
   // Admin login (uses hidden portal path for security)
   r = await request('POST', ADMIN_BASE, ADMIN_LOGIN_PATH, {
     email: process.env.ADMIN_EMAIL || 'koushishetty8109@gmail.com',
@@ -124,16 +115,18 @@ async function testRegisterAndLogin() {
   ADMIN_TOKEN = r.body.token;
   assert('Admin login', !!ADMIN_TOKEN);
 
-  // Approve worker via admin
-  const workerListRes = await request('GET', ADMIN_BASE, '/api/admin/workers', null, ADMIN_TOKEN);
-  if (workerListRes.status === 200 && workerListRes.body.workers) {
-    const w = workerListRes.body.workers.find(w => w.email === `payworker_${ts}@test.com`);
-    if (w) {
-      workerUserId = w.id;
-      const approveRes = await request('POST', ADMIN_BASE, `/api/admin/workers/${w.id}/approve`, null, ADMIN_TOKEN);
-      assert('Worker approved by admin', approveRes.status === 200, JSON.stringify(approveRes.body));
-    }
-  }
+  // Create worker via admin API
+  r = await request('POST', ADMIN_BASE, '/api/admin/workers', {
+    name: `PayTestWorker_${ts}`,
+    email: `payworker_${ts}@test.com`,
+    password: 'SecurePass123!',
+    skills: 'Testing',
+    experience: '1 year',
+    available_hours: 40,
+    approved: 1
+  }, ADMIN_TOKEN);
+  assert('Worker registered', r.status === 200 && r.body.success, JSON.stringify(r.body));
+  workerUserId = r.body.workerId;
 
   // Login worker after approval
   r = await request('POST', PUBLIC_BASE, '/api/auth/login', {

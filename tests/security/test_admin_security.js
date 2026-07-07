@@ -8,13 +8,11 @@ async function runSecurityTests() {
     // Test 1: IP Whitelisting Validation
     console.log('⚡ Test 1: IP Whitelisting...');
     // We send a request with a spoofed external IP address in X-Forwarded-For
-    const ipRes = await fetch(`${adminBase}/api/admin/auth/portal-secure-login-x97`, {
-      method: 'POST',
+    const ipRes = await fetch(`${adminBase}/api/admin/workers/pending`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'x-forwarded-for': '198.51.100.42'
-      },
-      body: JSON.stringify({ email: 'super_admin@company.com', password: 'wrong' })
+      }
     });
     
     if (ipRes.status === 403) {
@@ -118,7 +116,7 @@ async function adminLogin(email, password) {
   // Reset lockout from database if checking seeded admins
   const sqlite3 = require('sqlite3').verbose();
   const path = require('path');
-  const db = new sqlite3.Database(path.join(__dirname, '..', 'database.db'));
+  const db = new sqlite3.Database(path.join(__dirname, '..', '..', 'database.db'));
   await new Promise((resolve) => {
     db.run('UPDATE users SET login_attempts = 0, locked_until = NULL WHERE email = ?', [email], () => {
       db.close(resolve);

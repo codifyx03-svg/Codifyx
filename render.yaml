@@ -1,41 +1,42 @@
+databases:
+  - name: codifyx-db
+    databaseName: codifyx
+    user: codifyx_admin
+    plan: free
+
 services:
+  # 1. Public API Web Service
   - type: web
     name: codifyx-public-api
     env: node
-    plan: free
-    branch: main
-    rootDir: .
     buildCommand: npm install
     startCommand: node apps/public-api/server.js
+    plan: free
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: codifyx-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
       - key: NODE_ENV
         value: production
-      - key: JWT_SECRET
-        value: df_jwt_super_secret_key_2024_change_in_production
-      - key: FIELD_ENCRYPTION_KEY
-        value: 087ca6d190a22cd087d2b7657909dccde57683f0023168ff8a5b9fb401b76ea7
-      - key: CORS_ALLOWED_ORIGINS
-        value: "https://codifyx-solutions.web.app,https://codifyx-solutions.firebaseapp.com,https://codifyx-solutions-worker.web.app,https://codifyx-solutions-worker.firebaseapp.com,https://codifyx-solutions-admin.web.app,https://codifyx-solutions-admin.firebaseapp.com"
+      - key: DEBUG_OTP
+        value: "false"
 
+  # 2. Admin API Web Service
   - type: web
     name: codifyx-admin-api
     env: node
-    plan: free
-    branch: main
-    rootDir: .
     buildCommand: npm install
     startCommand: node apps/admin-api/server.js
+    plan: free
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: codifyx-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
       - key: NODE_ENV
         value: production
-      - key: JWT_SECRET
-        value: df_jwt_super_secret_key_2024_change_in_production
-      - key: FIELD_ENCRYPTION_KEY
-        value: 087ca6d190a22cd087d2b7657909dccde57683f0023168ff8a5b9fb401b76ea7
-      - key: CORS_ALLOWED_ORIGINS
-        value: "https://codifyx-solutions-admin.web.app,https://codifyx-solutions-admin.firebaseapp.com,https://codifyx-solutions.web.app,https://codifyx-solutions-worker.web.app"
-      - key: ADMIN_WHITELIST_IPS
-        value: "103.5.135.4"
-
-
-
