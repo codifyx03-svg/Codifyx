@@ -18,7 +18,7 @@ services:
           name: codifyx-db
           property: connectionString
       - key: JWT_SECRET
-        generateValue: true
+        value: "codifyx_shared_super_secure_jwt_secret_2026_x99"
       - key: NODE_ENV
         value: production
       - key: DEBUG_OTP
@@ -39,7 +39,7 @@ services:
           name: codifyx-db
           property: connectionString
       - key: JWT_SECRET
-        generateValue: true
+        value: "codifyx_shared_super_secure_jwt_secret_2026_x99"
       - key: NODE_ENV
         value: production
       - key: ADMIN_WHITELIST_IPS
