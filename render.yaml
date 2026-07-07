@@ -40,3 +40,5 @@ services:
         generateValue: true
       - key: NODE_ENV
         value: production
+      - key: ADMIN_WHITELIST_IPS
+        value: "*"
