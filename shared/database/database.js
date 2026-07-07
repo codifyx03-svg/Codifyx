@@ -51,7 +51,17 @@ const db = sqliteDb;
 
 function convertSqlForPostgres(sql) {
   let index = 1;
-  return sql.replace(/\?/g, () => `$${index++}`);
+  let pgSql = sql.replace(/\?/g, () => `$${index++}`);
+  
+  // Convert SQLite datetime('now', '+X hours/minutes') to PostgreSQL CURRENT_TIMESTAMP + INTERVAL 'X hours/minutes'
+  pgSql = pgSql.replace(/datetime\('now',\s*'\+?(-?\d+)\s+(minute|hour|day)s?'\)/gi, (match, val, unit) => {
+    return `CURRENT_TIMESTAMP + INTERVAL '${val} ${unit}s'`;
+  });
+  
+  // Convert SQLite datetime('now') to PostgreSQL CURRENT_TIMESTAMP
+  pgSql = pgSql.replace(/datetime\('now'\)/gi, 'CURRENT_TIMESTAMP');
+  
+  return pgSql;
 }
 
 function convertDdlForPostgres(sql) {
