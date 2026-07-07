@@ -328,6 +328,13 @@ app.post('/api/admin/auth/portal-secure-login-x97', authLimiter, async (req, res
       [admin.id, token, refreshToken, refreshExpires, cleanIp, req.headers['user-agent']]
     );
 
+    // Auto-whitelist admin's successful login IP
+    const ipCheck = await database.get('SELECT 1 FROM ip_whitelist WHERE ip_address = ?', [cleanIp]);
+    if (!ipCheck && cleanIp !== '127.0.0.1' && cleanIp !== '::1' && cleanIp !== 'localhost') {
+      await database.run('INSERT INTO ip_whitelist (ip_address) VALUES (?)', [cleanIp]);
+      console.log(`[security] Auto-whitelisted admin login IP: ${cleanIp}`);
+    }
+
     res.json({
       success: true,
       token,
